@@ -16,11 +16,45 @@ export type WorkoutEntry = {
   note: string;
 };
 
+export type ExerciseAliasCluster = {
+  id: string;
+  canonicalName: string;
+  aliases: string[];
+};
+
+export type ExerciseAliasStore = {
+  version: 1;
+  clusters: ExerciseAliasCluster[];
+};
+
+export type ExerciseResolveCandidate = {
+  exercise: string;
+  exerciseKey: string;
+  count: number;
+  lastDate: string;
+  score: number;
+};
+
+export type ExerciseResolveResult =
+  | {
+      status: "resolved";
+      query: string;
+      cluster: ExerciseAliasCluster;
+      source: "alias-store" | "exact-sheet-name";
+      matchedAlias: string;
+    }
+  | {
+      status: "resolutionRequired";
+      query: string;
+      candidates: ExerciseResolveCandidate[];
+    };
+
 export type GymPluginConfig = {
   spreadsheetId?: string;
   sheetName?: string;
   credentialsPath?: string;
   defaultRestSeconds?: number;
+  aliasStorePath?: string;
 };
 
 export type ResolvedGymConfig = {
@@ -28,6 +62,7 @@ export type ResolvedGymConfig = {
   sheetName: string;
   credentialsPath: string;
   defaultRestSeconds: number;
+  aliasStorePath: string;
 };
 
 export type AppendWorkoutInput = {
@@ -38,3 +73,8 @@ export type AppendWorkoutInput = {
   note?: string;
 };
 
+export type AddExerciseAliasInput = {
+  canonicalName: string;
+  alias: string;
+  id?: string;
+};

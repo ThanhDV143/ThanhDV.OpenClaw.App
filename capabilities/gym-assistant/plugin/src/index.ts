@@ -1,5 +1,5 @@
 import { defineToolPlugin } from "openclaw/plugin-sdk/tool-plugin";
-import { gymLogAppend, gymLogLatest, gymLogSearch } from "./tools.ts";
+import { gymAliasAdd, gymAliasList, gymLogAppend, gymLogLatest, gymLogSearch } from "./tools.ts";
 
 const WorkoutSetSchema = {
   type: "object",
@@ -20,6 +20,7 @@ const ConfigSchema = {
     sheetName: { type: "string", description: "Workout sheet/tab name." },
     credentialsPath: { type: "string", description: "Path to Google service account JSON." },
     defaultRestSeconds: { type: "number", description: "Default rest time in seconds." },
+    aliasStorePath: { type: "string", description: "Path to persistent exercise alias memory JSON." },
   },
 };
 
@@ -30,14 +31,42 @@ export default defineToolPlugin({
   configSchema: ConfigSchema,
   tools: (tool) => [
     tool({
+      name: "gym_alias_list",
+      label: "Gym Alias List",
+      description: "List the persistent exercise alias memory used by gym lookup tools.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        properties: {},
+      },
+      execute: (params, config) => gymAliasList(params, config),
+    }),
+    tool({
+      name: "gym_alias_add",
+      label: "Gym Alias Add",
+      description: "Add or confirm an exercise alias after the user confirms two names are the same exercise.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        required: ["canonicalName", "alias"],
+        properties: {
+          id: { type: "string", description: "Optional stable cluster ID. Defaults from canonicalName." },
+          canonicalName: { type: "string", description: "Preferred display name for this exercise." },
+          alias: { type: "string", description: "Additional user-facing name for the same exercise." },
+        },
+      },
+      execute: (params, config) => gymAliasAdd(params, config),
+    }),
+    tool({
       name: "gym_log_latest",
       label: "Gym Log Latest",
-      description: "Return the latest workout log entry for an exercise.",
+      description: "Return the latest workout log entry for a resolved exercise alias cluster. If unresolved, returns candidates instead of guessing.",
       parameters: {
         type: "object",
         additionalProperties: false,
         required: ["exercise"],
         properties: {
+          date: { type: "string", description: "Optional ISO date yyyy-mm-dd to restrict the lookup to one day." },
           exercise: { type: "string", description: "Exercise name, for example Pull-ups." },
         },
       },
@@ -46,12 +75,13 @@ export default defineToolPlugin({
     tool({
       name: "gym_log_search",
       label: "Gym Log Search",
-      description: "Search recent workout log entries for an exercise.",
+      description: "Search recent workout log entries for a resolved exercise alias cluster. If unresolved, returns candidates instead of guessing.",
       parameters: {
         type: "object",
         additionalProperties: false,
         required: ["exercise"],
         properties: {
+          date: { type: "string", description: "Optional ISO date yyyy-mm-dd to restrict the lookup to one day." },
           exercise: { type: "string", description: "Exercise name, for example Pull-ups." },
           limit: { type: "number", description: "Maximum number of entries to return." },
         },

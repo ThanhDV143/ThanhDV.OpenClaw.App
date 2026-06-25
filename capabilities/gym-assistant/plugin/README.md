@@ -20,6 +20,10 @@ GitHub Actions runs:
 
 The repository also keeps `npm run plugin:validate` for environments where the real OpenClaw CLI is installed. CI does not depend on that CLI yet.
 
+## Read Strategy
+
+Read tools use persistent alias memory outside the Google Sheet. Known aliases resolve to one exercise cluster and search all confirmed names. Unknown aliases return `resolutionRequired` with candidates; the plugin does not silently choose a fuzzy match.
+
 ## Runtime Config
 
 The plugin reads config from OpenClaw plugin config first, then environment variables.
@@ -28,8 +32,9 @@ The plugin reads config from OpenClaw plugin config first, then environment vari
 {
   "spreadsheetId": "google-sheet-id",
   "sheetName": "Gym",
-  "credentialsPath": "/opt/appdata/openclaw/plugin/gym/google-service-account.json",
-  "defaultRestSeconds": 120
+  "credentialsPath": "/opt/appdata/openclaw/plugin/gym/credentials/google-service-account.json",
+  "defaultRestSeconds": 120,
+  "aliasStorePath": "/home/node/.openclaw/gym-assistant/exercise-aliases.json"
 }
 ```
 
@@ -39,5 +44,6 @@ Environment fallbacks:
 - `GYM_GOOGLE_SHEET_NAME`
 - `GYM_GOOGLE_APPLICATION_CREDENTIALS`
 - `GYM_DEFAULT_REST_SECONDS`
+- `GYM_EXERCISE_ALIAS_PATH`
 
 Do not commit credentials, spreadsheet IDs, or exported personal data.

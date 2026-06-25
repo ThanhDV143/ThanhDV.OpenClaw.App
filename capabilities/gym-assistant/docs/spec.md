@@ -2,259 +2,129 @@
 
 ## Goal
 
-Allow OpenClaw chat channels to query and update a Google Sheet workout journal.
+Allow OpenClaw chat channels to query and update a Google Sheet workout journal without forcing the user to keep sheet data machine-perfect.
 
-Examples:
-
-- "Hôm trước bài Pull-ups tôi tập thế nào?"
-- "Lần gần nhất tôi tập Dumbbell Bench Press được mấy rep?"
-- "Dumbbell Bench Press set 1 10 rep 25kg"
-
-The Google Sheet remains the source of truth.
+The Google Sheet remains the human-facing source of truth. Exercise alias memory lives outside the sheet and is managed by the plugin.
 
 ## Assumptions
 
 - The sheet layout follows the attached CSV:
   - Row 1: `Ngày`, `Bài tập`, grouped columns `Set 1` to `Set 4`, `Thời gian nghỉ (s)`, `Ghi chú`
   - Row 2: per-set subheaders `Rep`, `Tạ`
-  - Date is only filled on the first row of each training day; blank date cells inherit the most recent date above.
+  - Blank date cells inherit the most recent date above.
 - Vietnamese decimal values may use comma notation, for example `12,5`.
-- Exercise matching should be case-insensitive and trim extra spaces.
-- Writes should append or update rows in the existing Google Sheet, not create a separate local file.
+- The user may freely edit exercise names in the sheet.
+- Known aliases are stored in plugin memory, not in the workout sheet.
+- Unknown aliases return a resolution prompt instead of a guessed result.
 
-## Recommended OpenClaw Shape
-
-Use an OpenClaw tool plugin plus a small skill.
-
-- Tool plugin: handles Google Sheets API calls and structured parsing.
-- Skill: tells the agent when to call the gym tools and how to phrase answers.
-
-This is the right split because OpenClaw docs describe tools as typed callable actions for reading/changing external systems, while skills are instruction packs for repeatable workflows.
-
-## Tool Contract
-
-Expose these MVP tools from the plugin:
-
-### `gym_log_search`
-
-Find workout history for an exercise.
-
-Input:
-
-```json
-{
-  "exercise": "Pull-ups",
-  "limit": 5
-}
-```
-
-Output:
-
-```json
-{
-  "matches": [
-    {
-      "date": "2026-06-21",
-      "exercise": "Pull-ups",
-      "sets": [
-        { "set": 1, "reps": 9, "weightKg": null },
-        { "set": 2, "reps": 8, "weightKg": null },
-        { "set": 3, "reps": 5, "weightKg": null }
-      ],
-      "restSeconds": 120,
-      "note": ""
-    }
-  ]
-}
-```
+## Tools
 
 ### `gym_log_latest`
 
-Return the most recent entry for an exercise.
+Return the newest workout entry for a resolved exercise alias cluster.
 
 Input:
 
 ```json
+{ "exercise": "kéo xà", "date": "2026-06-25" }
+```
+
+If resolved:
+
+```json
 {
-  "exercise": "Dumbbell Bench Press"
+  "resolution": {
+    "status": "resolved",
+    "cluster": {
+      "canonicalName": "Pull-ups",
+      "aliases": ["Pull-ups", "kéo xà"]
+    }
+  },
+  "entry": {
+    "date": "2026-06-25",
+    "exercise": "Pull-ups",
+    "sets": [{ "set": 1, "reps": 10, "weightKg": null }]
+  }
 }
 ```
 
-Output: same row shape as `gym_log_search`.
+If unresolved:
+
+```json
+{
+  "resolution": {
+    "status": "resolutionRequired",
+    "candidates": [{ "exercise": "Pull-ups", "lastDate": "2026-06-25", "count": 8 }]
+  },
+  "entry": null
+}
+```
+
+### `gym_log_search`
+
+Return recent entries for a resolved exercise alias cluster. Unknown aliases return `resolutionRequired` and no matches.
+
+### `gym_alias_add`
+
+Persist a user-confirmed alias outside the workout sheet.
+
+Input:
+
+```json
+{ "canonicalName": "Pull-ups", "alias": "kéo xà" }
+```
+
+### `gym_alias_list`
+
+List the current alias memory.
 
 ### `gym_log_append`
 
-Append one exercise row to the current workout date.
+Append one exercise row to the current workout date. Writes preserve the existing sheet shape and do not require an `Exercise ID` column.
 
-Input:
-
-```json
-{
-  "date": "2026-06-25",
-  "exercise": "Dumbbell Bench Press",
-  "sets": [
-    { "set": 1, "reps": 10, "weightKg": 25 }
-  ],
-  "restSeconds": 120,
-  "note": ""
-}
-```
-
-Behavior:
-
-- If this is the first row for `date`, write the date in column `Ngày`.
-- If the previous row already has the same date, leave `Ngày` blank to match the sheet style.
-- Preserve columns for up to 4 sets.
-
-### Future: `gym_log_update_set`
-
-Update a specific set in an existing row.
-
-Input:
-
-```json
-{
-  "date": "2026-06-25",
-  "exercise": "Dumbbell Bench Press",
-  "set": 1,
-  "reps": 10,
-  "weightKg": 25
-}
-```
-
-Behavior:
-
-- Find exact date plus normalized exercise name.
-- Update only the target set cells.
-- Return an error if multiple rows match after normalization.
-
-## Parser Rules
-
-Normalize every sheet row into this internal shape:
-
-```ts
-type WorkoutSet = {
-  set: 1 | 2 | 3 | 4;
-  reps: number | null;
-  weightKg: number | null;
-};
-
-type WorkoutEntry = {
-  rowNumber: number;
-  date: string; // ISO yyyy-mm-dd
-  exercise: string;
-  exerciseKey: string;
-  sets: WorkoutSet[];
-  restSeconds: number | null;
-  note: string;
-};
-```
-
-Normalization:
-
-- `exerciseKey = exercise.trim().toLowerCase().replace(/\s+/g, " ")`
-- Parse `dd/MM/yyyy` into ISO date.
-- Parse numbers after replacing comma decimal separators with dots.
-- Treat blank set values as `null`.
-- Carry forward the most recent non-empty `Ngày`.
-
-Data quality checks:
-
-- Flag impossible weights such as `254` if neighboring entries suggest `25` or `27,5`.
-- Flag out-of-order dates, for example a `21/05/2026` row after `18/06/2026`.
-- Do not silently fix suspicious data during normal query calls; mention it in the answer or expose a validation tool later.
-
-## Agent Behavior
-
-For read questions:
-
-- Extract exercise name from the user message.
-- Call `gym_log_latest` for "lần gần nhất".
-- Call `gym_log_search` for "hôm trước", "lịch sử", or comparison questions.
-- Answer with date, sets, reps, weights, rest time, and note if available.
-
-For write requests:
-
-- If the user gives no date, default to today in the OpenClaw server timezone.
-- If the user gives only one set, call `gym_log_append` with that set.
-- If the user references an existing day/exercise/set, call `gym_log_update_set`.
-- Confirm the exact row written after the tool succeeds.
-
-Example answer:
-
-```text
-Lần gần nhất bạn tập Pull-ups là 21/06/2026: set 1 9 rep, set 2 8 rep, set 3 5 rep, nghỉ 120 giây.
-```
-
-Example write confirmation:
-
-```text
-Đã ghi Dumbbell Bench Press ngày 25/06/2026: set 1, 10 rep, 25 kg.
-```
-
-## Google Sheets Access
-
-Use a Google Cloud service account or OAuth client.
-
-Recommended for personal deployment:
-
-- Create a Google Cloud project.
-- Enable Google Sheets API.
-- Create a service account.
-- Share the workout sheet with the service account email.
-- Store credentials outside the plugin source, for example:
-  - `/opt/appdata/openclaw/plugin/gym/google-service-account.json`
-  - environment variable `GYM_GOOGLE_APPLICATION_CREDENTIALS`
-
-Plugin config:
+## Runtime Config
 
 ```json
 {
   "spreadsheetId": "google-sheet-id",
   "sheetName": "Gym",
-  "credentialsPath": "/opt/appdata/openclaw/plugin/gym/google-service-account.json",
-  "defaultRestSeconds": 120
+  "credentialsPath": "/opt/appdata/openclaw/plugin/gym/credentials/google-service-account.json",
+  "defaultRestSeconds": 120,
+  "aliasStorePath": "/home/node/.openclaw/gym-assistant/exercise-aliases.json"
 }
 ```
 
-Do not store Google credentials in `AGENTS.md`, git, or chat-visible memory.
+Environment fallbacks:
 
-## Deployment Notes
+- `GYM_GOOGLE_SPREADSHEET_ID`
+- `GYM_GOOGLE_SHEET_NAME`
+- `GYM_GOOGLE_APPLICATION_CREDENTIALS`
+- `GYM_DEFAULT_REST_SECONDS`
+- `GYM_EXERCISE_ALIAS_PATH`
 
-For the current OpenClaw stack:
+## Agent Behavior
 
-- Put credentials under `/opt/appdata/openclaw/plugin/gym`.
-- Mount that path read-only into `openclaw-gateway`.
-- Install the plugin in the OpenClaw workspace or as a local plugin package.
-- Allowlist only the gym tools for the assistant profile if you want tighter control.
+For read questions:
 
-Minimal persistent path to add:
+- Call `gym_log_latest` or `gym_log_search`.
+- If `resolution.status` is `resolved`, answer from returned entries.
+- If `resolution.status` is `resolutionRequired`, ask one short confirmation question using top candidates.
+- After the user confirms two names are the same exercise, call `gym_alias_add`.
+- Do not silently choose fuzzy candidates as fact.
 
-```text
-/opt/appdata/openclaw/plugin/gym:/opt/appdata/openclaw/plugin/gym:ro
-```
+For write requests:
+
+- If the user gives no date, default to today in the OpenClaw server timezone.
+- If the user gives only one set, call `gym_log_append`.
+- Confirm the exact row written after the tool succeeds.
 
 ## Test Cases
 
-Read tests:
-
-- Query latest `Pull-ups` returns the most recent normalized date.
-- Query `Dumbbell Bench Press` matches `Dumbbell Bench Press ` with trailing space.
-- Decimal weights parse `12,5` as `12.5`.
 - Blank date cells inherit the previous date.
+- Decimal weights like `12,5` parse as `12.5`.
+- Exact normalized exercise names still work.
+- Confirmed aliases search all raw names in that cluster.
+- Unknown aliases return `resolutionRequired` instead of guessed data.
+- Appending the first exercise of a new date writes the date cell.
+- Appending another exercise on the same date leaves the date cell blank.
 
-Write tests:
-
-- Append first exercise of a new date writes the date cell.
-- Append second exercise on the same date leaves the date cell blank.
-- Updating set 1 changes only the two cells for set 1.
-- Ambiguous duplicate rows return a clear error.
-
-## First Implementation Slice
-
-1. Build the OpenClaw tool plugin with `gym_log_latest`, `gym_log_search`, and `gym_log_append`.
-2. Add a workspace skill `gym-assistant/SKILL.md` that routes gym journal questions to those tools.
-3. Deploy credentials and config on the Ubuntu host.
-4. Smoke test from WebChat:
-   - "Lần gần nhất tôi tập Pull-ups được mấy rep?"
-   - "Pull-ups set 1 10 rep"

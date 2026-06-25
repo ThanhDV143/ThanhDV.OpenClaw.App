@@ -46,18 +46,19 @@ export function parseWorkoutRows(rows: unknown[][]): WorkoutEntry[] {
   return entries;
 }
 
-export function searchEntries(entries: WorkoutEntry[], exercise: string, limit = 5): WorkoutEntry[] {
+export function searchEntries(entries: WorkoutEntry[], exercise: string, limit = 5, date?: string): WorkoutEntry[] {
   const key = exerciseKey(exercise);
   const safeLimit = Math.max(1, Math.min(50, Math.floor(limit || 5)));
+  const scopedEntries = date ? entries.filter((entry) => entry.date === date) : entries;
 
-  return entries
+  return scopedEntries
     .filter((entry) => entry.exerciseKey === key)
     .sort(compareNewestFirst)
     .slice(0, safeLimit);
 }
 
-export function latestEntry(entries: WorkoutEntry[], exercise: string): WorkoutEntry | null {
-  return searchEntries(entries, exercise, 1)[0] ?? null;
+export function latestEntry(entries: WorkoutEntry[], exercise: string, date?: string): WorkoutEntry | null {
+  return searchEntries(entries, exercise, 1, date)[0] ?? null;
 }
 
 export function buildAppendRow(input: {
@@ -187,4 +188,3 @@ function googleSerialDateToIso(value: number): string {
 function toIsoDate(value: Date): string {
   return value.toISOString().slice(0, 10);
 }
-

@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { addExerciseAlias, EMPTY_ALIAS_STORE } from "../src/alias-store.ts";
 import { parseCsv } from "../src/csv.ts";
+import { resolveExercise, searchEntriesByCluster } from "../src/exercise-resolver.ts";
 import {
   buildAppendRow,
   latestEntry,
@@ -61,6 +63,49 @@ test("search returns newest first and respects limit", async () => {
   );
 });
 
+test("latest entry can be restricted to one date", async () => {
+  const entries = await loadEntries();
+  const latest = latestEntry(entries, "Pull-ups", "2026-05-18");
+
+  assert.equal(latest?.date, "2026-05-18");
+  assert.deepEqual(latest?.sets, [
+    { set: 1, reps: 8, weightKg: null },
+    { set: 2, reps: 7, weightKg: null },
+    { set: 3, reps: 4, weightKg: null },
+  ]);
+});
+
+test("known aliases resolve to one cluster and search all confirmed names", async () => {
+  const entries = await loadEntries();
+  const store = addExerciseAlias(EMPTY_ALIAS_STORE, {
+    canonicalName: "Pull-ups",
+    alias: "keo xa",
+  });
+  const resolution = resolveExercise("keo xa", entries, store);
+
+  assert.equal(resolution.status, "resolved");
+
+  if (resolution.status === "resolved") {
+    const matches = searchEntriesByCluster(entries, resolution.cluster, 10);
+    assert.deepEqual(
+      matches.map((entry) => entry.date),
+      ["2026-06-21", "2026-05-21", "2026-05-18"],
+    );
+  }
+});
+
+test("unknown aliases return candidates without silently choosing one", async () => {
+  const entries = await loadEntries();
+  const resolution = resolveExercise("keo xa", entries, EMPTY_ALIAS_STORE);
+
+  assert.equal(resolution.status, "resolutionRequired");
+
+  if (resolution.status === "resolutionRequired") {
+    assert.ok(resolution.candidates.length > 0);
+    assert.equal(resolution.candidates[0].exercise, "Pull-ups");
+  }
+});
+
 test("append row builder writes 1-4 sets into the sheet shape", () => {
   const row = buildAppendRow({
     dateCell: "25/06/2026",
@@ -76,4 +121,3 @@ test("append row builder writes 1-4 sets into the sheet shape", () => {
 
   assert.deepEqual(row, ["25/06/2026", "Pull-ups", 10, "", 8, "", "", "", 5, 20, 120, "test"]);
 });
-

@@ -8,6 +8,8 @@
   },
   "contracts": {
     "tools": [
+      "gym_alias_list",
+      "gym_alias_add",
       "gym_log_latest",
       "gym_log_search",
       "gym_log_append"
@@ -32,8 +34,11 @@
       "defaultRestSeconds": {
         "type": "number",
         "description": "Default rest time when the user does not specify it."
+      },
+      "aliasStorePath": {
+        "type": "string",
+        "description": "Path to persistent exercise alias memory JSON."
       }
     }
   }
 }
-

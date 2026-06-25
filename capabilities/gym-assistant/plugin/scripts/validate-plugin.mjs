@@ -8,7 +8,7 @@ const packagePath = resolve(root, "package.json");
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 const pkg = JSON.parse(await readFile(packagePath, "utf8"));
 
-const expectedTools = ["gym_log_latest", "gym_log_search", "gym_log_append"];
+const expectedTools = ["gym_alias_list", "gym_alias_add", "gym_log_latest", "gym_log_search", "gym_log_append"];
 
 if (manifest.id !== "gym-assistant") {
   throw new Error(`Unexpected plugin id: ${manifest.id}`);
@@ -33,4 +33,3 @@ if (!Array.isArray(pkg.files) || !pkg.files.includes("dist")) {
 }
 
 console.log("plugin metadata ok");
-
