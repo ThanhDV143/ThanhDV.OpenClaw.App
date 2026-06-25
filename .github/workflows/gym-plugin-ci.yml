@@ -1,0 +1,51 @@
+name: Gym Plugin CI
+
+on:
+  push:
+    paths:
+      - ".github/workflows/gym-plugin-ci.yml"
+      - "capabilities/gym-assistant/**"
+  pull_request:
+    paths:
+      - ".github/workflows/gym-plugin-ci.yml"
+      - "capabilities/gym-assistant/**"
+  workflow_dispatch:
+
+jobs:
+  gym-plugin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: capabilities/gym-assistant/plugin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: capabilities/gym-assistant/plugin/package.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Check plugin metadata
+        run: npm run plugin:check
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gym-assistant-dist
+          path: |
+            capabilities/gym-assistant/plugin/dist
+            capabilities/gym-assistant/plugin/openclaw.plugin.json
+            capabilities/gym-assistant/plugin/package.json
+

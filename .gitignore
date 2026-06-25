@@ -1,0 +1,15 @@
+.agents/
+node_modules/
+dist/
+coverage/
+
+.env
+.env.*
+*.local
+
+AGENTS.md
+
+google-service-account.json
+*-service-account.json
+*service-account*.json
+

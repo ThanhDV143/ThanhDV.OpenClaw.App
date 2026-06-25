@@ -1,0 +1,30 @@
+{
+  "name": "@thanhdv/openclaw-gym-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist",
+    "openclaw.plugin.json",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test ./tests/*.test.ts",
+    "build": "tsc -p tsconfig.json",
+    "plugin:check": "node ./scripts/validate-plugin.mjs",
+    "plugin:build": "openclaw plugins build --entry ./dist/index.js",
+    "plugin:validate": "openclaw plugins validate --entry ./dist/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0"
+  },
+  "engines": {
+    "node": ">=22.19"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  }
+}
