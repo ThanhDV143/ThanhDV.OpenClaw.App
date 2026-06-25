@@ -2,13 +2,11 @@ name: Gym Plugin CI
 
 on:
   push:
-    paths:
-      - ".github/workflows/gym-plugin-ci.yml"
-      - "capabilities/gym-assistant/**"
+    branches:
+      - "**"
   pull_request:
-    paths:
-      - ".github/workflows/gym-plugin-ci.yml"
-      - "capabilities/gym-assistant/**"
+    branches:
+      - "**"
   workflow_dispatch:
 
 jobs:
