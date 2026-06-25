@@ -1,5 +1,5 @@
 declare module "openclaw/plugin-sdk/tool-plugin" {
-  export type ToolDefinition<TParams = unknown, TConfig = unknown, TResult = unknown> = {
+  export type ToolDefinition<TParams = any, TConfig = any, TResult = any> = {
     name: string;
     label: string;
     description: string;
@@ -7,7 +7,7 @@ declare module "openclaw/plugin-sdk/tool-plugin" {
     execute: (params: TParams, config: TConfig) => Promise<TResult> | TResult;
   };
 
-  export type ToolBuilder = <TParams = unknown, TConfig = unknown, TResult = unknown>(
+  export type ToolBuilder = <TParams = any, TConfig = any, TResult = any>(
     definition: ToolDefinition<TParams, TConfig, TResult>,
   ) => ToolDefinition<TParams, TConfig, TResult>;
 
@@ -19,4 +19,3 @@ declare module "openclaw/plugin-sdk/tool-plugin" {
     tools: (tool: ToolBuilder) => ToolDefinition[];
   }): unknown;
 }
-
