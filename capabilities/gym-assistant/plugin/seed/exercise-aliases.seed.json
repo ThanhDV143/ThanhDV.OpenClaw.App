@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "clusters": [
+    {
+      "id": "pull_ups",
+      "canonicalName": "Pull-ups",
+      "aliases": ["Pull-ups", "Pull-ups ", "pull-up", "pullup", "pull up", "kéo xà", "hít xà"]
+    },
+    {
+      "id": "dumbbell_bench_press",
+      "canonicalName": "Dumbbell Bench Press",
+      "aliases": ["Dumbbell Bench Press", "Dumbbell Bench Press ", "đẩy ngực tạ đơn", "db bench press"]
+    },
+    {
+      "id": "incline_dumbbell_bench_press",
+      "canonicalName": "Incline Dumbbell Bench Press",
+      "aliases": ["Incline Dumbbell Bench Press", "đẩy ngực dốc lên tạ đơn", "incline db bench"]
+    },
+    {
+      "id": "t_bar_row",
+      "canonicalName": "T-Bar Row",
+      "aliases": ["T-Bar Row", "t bar row", "tbar row"]
+    },
+    {
+      "id": "cable_row",
+      "canonicalName": "Cable Row",
+      "aliases": ["Cable Row", "ngồi kéo cáp", "seated cable row"]
+    },
+    {
+      "id": "lat_pulldown",
+      "canonicalName": "Lat Pulldown",
+      "aliases": ["Lat Pulldown", "Lat Pulldown ", "kéo xô", "kéo xô máy"]
+    },
+    {
+      "id": "dumbbell_shoulder_press",
+      "canonicalName": "Dumbbell Shoulder Press",
+      "aliases": ["Dumbbell Shoulder Press", "Dumbbell Overhead Press", "Dumbell Overhead Press", "đẩy vai tạ đơn", "db shoulder press"]
+    },
+    {
+      "id": "dips",
+      "canonicalName": "Dips",
+      "aliases": ["Dips", "dip", "chống đẩy xà kép"]
+    },
+    {
+      "id": "push_ups",
+      "canonicalName": "Push-ups",
+      "aliases": ["Push-ups", "Push-ups ", "pushup", "push ups", "chống đẩy"]
+    },
+    {
+      "id": "barbell_squat",
+      "canonicalName": "Barbell Squat",
+      "aliases": ["Barbell Squat", "squat", "gánh đùi"]
+    },
+    {
+      "id": "leg_curl",
+      "canonicalName": "Leg Curl",
+      "aliases": ["Leg Curl", "cuốn đùi sau"]
+    },
+    {
+      "id": "romanian_deadlift",
+      "canonicalName": "Romanian Deadlift",
+      "aliases": ["Romanian Deadlift", "Dumbbell Romanian Deadlift", "rdl", "deadlift romanian"]
+    },
+    {
+      "id": "leg_raises",
+      "canonicalName": "Leg Raises",
+      "aliases": ["Leg Raises", "leg raise", "nâng chân"]
+    },
+    {
+      "id": "cable_oblique_twist",
+      "canonicalName": "Cable Oblique Twist",
+      "aliases": ["Cable Oblique Twist", "xoay bụng cáp"]
+    },
+    {
+      "id": "hip_thrust",
+      "canonicalName": "Hip Thrust",
+      "aliases": ["Hip Thrust", "Barbell Hip Thrust", "đẩy hông"]
+    },
+    {
+      "id": "bulgarian_split_squat",
+      "canonicalName": "Bulgarian Split Squat",
+      "aliases": ["Bulgarian Split Squat", "bulgarian squat"]
+    },
+    {
+      "id": "leg_extension",
+      "canonicalName": "Leg Extension",
+      "aliases": ["Leg Extension", "duỗi đùi"]
+    },
+    {
+      "id": "suitcase_carry",
+      "canonicalName": "Suitcase Carry",
+      "aliases": ["Suitcase Carry", "xách tạ một bên"]
+    },
+    {
+      "id": "cable_face_pull",
+      "canonicalName": "Cable Face Pull",
+      "aliases": ["Cable Face Pull", "face pull"]
+    },
+    {
+      "id": "dumbbell_wrist_curl",
+      "canonicalName": "Dumbbell Wrist Curl",
+      "aliases": ["Dumbbell Wrist Curl", "wrist curl", "cuốn cổ tay"]
+    },
+    {
+      "id": "reverse_barbell_curl",
+      "canonicalName": "Reverse Barbell Curl",
+      "aliases": ["Reverse Barbell Curl", "reverse curl"]
+    },
+    {
+      "id": "dumbbell_wrist_curl_and_reverse",
+      "canonicalName": "Dumbbell Wrist Curl and Reverse",
+      "aliases": ["Dumbbell Wrist Curl and Reverse", "wrist curl and reverse"]
+    },
+    {
+      "id": "calf_raise",
+      "canonicalName": "Calf Raise",
+      "aliases": ["Calf Raise", "Calf raise", "Calf Raise thẳng chân máy leg press", "Single-Leg Dumbbell Calf Raise", "nhón bắp chân"]
+    },
+    {
+      "id": "dumbbell_seated_calf_raise",
+      "canonicalName": "Dumbbell Seated Calf Raise",
+      "aliases": ["Dumbbell Seated Calf Raise", "seated calf raise"]
+    },
+    {
+      "id": "dumbbell_bicep_curls",
+      "canonicalName": "Dumbbell Bicep Curls",
+      "aliases": ["Dumbbell Bicep Curls", "db bicep curl", "cuốn tay trước tạ đơn"]
+    },
+    {
+      "id": "cable_crunches",
+      "canonicalName": "Cable Crunches",
+      "aliases": ["Cable Crunches", "gập bụng cáp"]
+    },
+    {
+      "id": "plank",
+      "canonicalName": "Plank",
+      "aliases": ["Plank"]
+    },
+    {
+      "id": "dumbbell_side_bend",
+      "canonicalName": "Dumbbell Side Bend",
+      "aliases": ["Dumbbell Side Bend", "side bend"]
+    }
+  ]
+}
+

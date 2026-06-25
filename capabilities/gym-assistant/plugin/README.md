@@ -24,6 +24,18 @@ The repository also keeps `npm run plugin:validate` for environments where the r
 
 Read tools use persistent alias memory outside the Google Sheet. Known aliases resolve to one exercise cluster and search all confirmed names. Unknown aliases return `resolutionRequired` with candidates; the plugin does not silently choose a fuzzy match.
 
+## Alias Seed
+
+The plugin ships with `seed/exercise-aliases.seed.json` for first install. Copy it to the runtime alias store only when the store does not already exist:
+
+```bash
+node /app/dist/extensions/gym-assistant/scripts/install-seed-aliases.mjs \
+  /app/dist/extensions/gym-assistant/seed/exercise-aliases.seed.json \
+  /home/node/.openclaw/gym-assistant/exercise-aliases.json
+```
+
+Do not overwrite the runtime alias store during normal updates because it may contain aliases learned after deployment.
+
 ## Runtime Config
 
 The plugin reads config from OpenClaw plugin config first, then environment variables.

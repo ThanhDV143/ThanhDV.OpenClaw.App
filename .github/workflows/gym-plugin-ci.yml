@@ -46,6 +46,7 @@ jobs:
           name: gym-assistant-dist
           path: |
             capabilities/gym-assistant/plugin/dist
+            capabilities/gym-assistant/plugin/seed
+            capabilities/gym-assistant/plugin/scripts/install-seed-aliases.mjs
             capabilities/gym-assistant/plugin/openclaw.plugin.json
             capabilities/gym-assistant/plugin/package.json
-

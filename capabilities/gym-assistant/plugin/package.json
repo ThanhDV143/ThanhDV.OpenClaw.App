@@ -5,6 +5,7 @@
   "type": "module",
   "files": [
     "dist",
+    "seed",
     "openclaw.plugin.json",
     "README.md"
   ],

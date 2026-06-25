@@ -33,3 +33,11 @@ GYM_GOOGLE_APPLICATION_CREDENTIALS=/opt/appdata/openclaw/plugin/gym/credentials/
 GYM_DEFAULT_REST_SECONDS=120
 GYM_EXERCISE_ALIAS_PATH=/home/node/.openclaw/gym-assistant/exercise-aliases.json
 ```
+
+On first install, seed alias memory after uploading the plugin artifact:
+
+```bash
+docker exec openclaw-gateway sh -lc 'node /app/dist/extensions/gym-assistant/scripts/install-seed-aliases.mjs /app/dist/extensions/gym-assistant/seed/exercise-aliases.seed.json /home/node/.openclaw/gym-assistant/exercise-aliases.json'
+```
+
+This command does not overwrite an existing alias store.
