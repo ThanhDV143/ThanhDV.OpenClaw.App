@@ -1,26 +1,26 @@
-name: Gym Plugin CI
+name: Unity Package Catalog Plugin CI
 
 on:
   push:
     branches:
       - "**"
     paths:
-      - "capabilities/gym-assistant/plugin/**"
-      - ".github/workflows/gym-plugin-ci.yml"
+      - "capabilities/unity-package-catalog/plugin/**"
+      - ".github/workflows/unity-package-catalog-plugin-ci.yml"
   pull_request:
     branches:
       - "**"
     paths:
-      - "capabilities/gym-assistant/plugin/**"
-      - ".github/workflows/gym-plugin-ci.yml"
+      - "capabilities/unity-package-catalog/plugin/**"
+      - ".github/workflows/unity-package-catalog-plugin-ci.yml"
   workflow_dispatch:
 
 jobs:
-  gym-plugin:
+  unity-package-catalog-plugin:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: capabilities/gym-assistant/plugin
+        working-directory: capabilities/unity-package-catalog/plugin
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: "24"
           cache: "npm"
-          cache-dependency-path: capabilities/gym-assistant/plugin/package.json
+          cache-dependency-path: capabilities/unity-package-catalog/plugin/package.json
 
       - name: Install dependencies
         run: npm install
@@ -47,10 +47,8 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: gym-assistant-dist
+          name: unity-package-catalog-dist
           path: |
-            capabilities/gym-assistant/plugin/dist
-            capabilities/gym-assistant/plugin/seed
-            capabilities/gym-assistant/plugin/scripts/install-seed-aliases.mjs
-            capabilities/gym-assistant/plugin/openclaw.plugin.json
-            capabilities/gym-assistant/plugin/package.json
+            capabilities/unity-package-catalog/plugin/dist
+            capabilities/unity-package-catalog/plugin/openclaw.plugin.json
+            capabilities/unity-package-catalog/plugin/package.json

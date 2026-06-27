@@ -5,6 +5,7 @@ This repository is a workspace for building personal OpenClaw capabilities.
 Initial capability:
 
 - Gym assistant: query and update a Google Sheets workout journal from OpenClaw chat channels.
+- Unity package catalog: search and safely manage Unity packages from Verdaccio and NAS-hosted `.unitypackage` files.
 
 Planned capability types:
 

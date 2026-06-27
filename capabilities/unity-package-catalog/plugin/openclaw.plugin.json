@@ -1,0 +1,52 @@
+{
+  "id": "unity-package-catalog",
+  "name": "Unity Package Catalog",
+  "description": "Search and safely manage Unity packages from Verdaccio and NAS-hosted .unitypackage files.",
+  "version": "0.1.0",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "unity_package_index_refresh",
+      "unity_package_search",
+      "unity_package_get",
+      "unity_package_delete_candidate",
+      "unity_package_delete"
+    ]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "verdaccioRegistryUrl": {
+        "type": "string",
+        "description": "Verdaccio registry URL."
+      },
+      "verdaccioTokenEnvVar": {
+        "type": "string",
+        "description": "Environment variable that contains the Verdaccio auth token."
+      },
+      "nasPackageRoots": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Container paths to scan for .unitypackage files."
+      },
+      "nasTrashRoot": {
+        "type": "string",
+        "description": "Container path where deleted .unitypackage files are archived."
+      },
+      "indexPath": {
+        "type": "string",
+        "description": "Persistent JSON index path."
+      },
+      "indexMaxAgeHours": {
+        "type": "number",
+        "description": "Search marks the index stale after this many hours."
+      }
+    }
+  }
+}
+
