@@ -116,7 +116,7 @@ export default defineToolPlugin({
     tool({
       name: "gym_log_append",
       label: "Gym Log Append",
-      description: "Append one exercise row to the workout log.",
+      description: "Add one exercise row to the workout log in date order. If the date already exists, insert it at the end of that date block; if it falls between existing dates, insert it before the next date; otherwise append it to the sheet.",
       parameters: {
         type: "object",
         additionalProperties: false,
@@ -156,15 +156,16 @@ export default defineToolPlugin({
       name: "gym_log_update",
       label: "Gym Log Update",
       description:
-        "Update a confirmed workout log row. Requires rowNumber, expectedFingerprint, and confirmed=true from a prior gym_log_find result.",
+        "Update a confirmed workout log row. First use gym_log_find, show the exact row to the user, and wait for a separate explicit confirmation. Then pass rowNumber, expectedFingerprint, confirmed=true, and the user's confirmation text.",
       parameters: {
         type: "object",
         additionalProperties: false,
-        required: ["rowNumber", "expectedFingerprint", "confirmed"],
+        required: ["rowNumber", "expectedFingerprint", "confirmed", "userConfirmation"],
         properties: {
           rowNumber: { type: "number", description: "Google Sheet row number from gym_log_find." },
           expectedFingerprint: { type: "string", description: "Fingerprint from gym_log_find for the exact row." },
-          confirmed: { enum: [true], description: "Must be true after the user confirms the exact row." },
+          confirmed: { enum: [true], description: "Must be true only after the user confirms the exact row in a separate reply." },
+          userConfirmation: { type: "string", minLength: 1, description: "Exact user confirmation text copied from the separate reply." },
           date: { type: "string", description: "Optional new ISO date yyyy-mm-dd." },
           exercise: { type: "string", description: "Optional new exercise name." },
           sets: {
@@ -184,15 +185,16 @@ export default defineToolPlugin({
       name: "gym_log_delete",
       label: "Gym Log Delete",
       description:
-        "Delete a confirmed workout log row. Requires rowNumber, expectedFingerprint, and confirmed=true from a prior gym_log_find result.",
+        "Delete a confirmed workout log row. First use gym_log_find, show the exact row to the user, and wait for a separate explicit confirmation. Then pass rowNumber, expectedFingerprint, confirmed=true, and the user's confirmation text.",
       parameters: {
         type: "object",
         additionalProperties: false,
-        required: ["rowNumber", "expectedFingerprint", "confirmed"],
+        required: ["rowNumber", "expectedFingerprint", "confirmed", "userConfirmation"],
         properties: {
           rowNumber: { type: "number", description: "Google Sheet row number from gym_log_find." },
           expectedFingerprint: { type: "string", description: "Fingerprint from gym_log_find for the exact row." },
-          confirmed: { enum: [true], description: "Must be true after the user confirms the exact row." },
+          confirmed: { enum: [true], description: "Must be true only after the user confirms the exact row in a separate reply." },
+          userConfirmation: { type: "string", minLength: 1, description: "Exact user confirmation text copied from the separate reply." },
         },
       },
       execute: (params, config) => gymLogDelete(params, config),

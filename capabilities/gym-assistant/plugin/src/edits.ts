@@ -71,9 +71,12 @@ export function buildUpdatedWorkoutRow(currentRow: unknown[], patch: UpdateWorko
   return row;
 }
 
-export function assertConfirmed(value: { confirmed?: boolean }): void {
+export function assertConfirmed(value: { confirmed?: boolean; userConfirmation?: string }): void {
   if (value.confirmed !== true) {
     throw new Error("Update/delete requires confirmed=true after the user confirms the exact candidate.");
+  }
+  if (!value.userConfirmation?.trim()) {
+    throw new Error("Update/delete requires userConfirmation with the user's explicit confirmation text.");
   }
 }
 

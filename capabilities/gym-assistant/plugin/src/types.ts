@@ -124,6 +124,7 @@ export type UpdateWorkoutInput = {
   rowNumber: number;
   expectedFingerprint: string;
   confirmed: true;
+  userConfirmation: string;
   date?: string;
   exercise?: string;
   sets?: WorkoutSet[];
@@ -135,4 +136,5 @@ export type DeleteWorkoutInput = {
   rowNumber: number;
   expectedFingerprint: string;
   confirmed: true;
+  userConfirmation: string;
 };

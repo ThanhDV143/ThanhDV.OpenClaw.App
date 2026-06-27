@@ -62,19 +62,19 @@ For messages like:
 
 Use:
 
-- `gym_log_append` when adding a new exercise row.
+- `gym_log_append` when adding a new exercise row. The tool keeps sheet rows in date order: existing dates go at the end of that date's block, dates between existing days go before the next later day, and only dates after the latest day go at the end of the sheet.
 - `gym_log_find` before editing or deleting any existing row.
 - `gym_log_update` only after the user confirms the exact row from `gym_log_find`.
 - `gym_log_delete` only after the user confirms the exact row from `gym_log_find`.
 
-If the user does not give a date, default to today's date in the OpenClaw server timezone. Confirm exactly what was written after the tool succeeds.
+If the user does not give a date, default to today's date in the OpenClaw server timezone. Confirm exactly what was written and where it was placed after the tool succeeds.
 
 For edit/delete requests:
 
 - First call `gym_log_find` with the exercise/date clues from the user.
 - Show the likely row(s) with date, exercise, sets, rest, note, and row number.
-- Ask one short confirmation question before changing data.
-- After the user confirms, call `gym_log_update` or `gym_log_delete` with the exact `rowNumber`, `expectedFingerprint`, and `confirmed: true`.
+- Ask one short confirmation question before changing data, then wait for the user's next reply.
+- After the user confirms, call `gym_log_update` or `gym_log_delete` with the exact `rowNumber`, `expectedFingerprint`, `confirmed: true`, and `userConfirmation` copied from that reply.
 - If the update/delete tool says the row changed after confirmation, stop and call `gym_log_find` again.
 
 ## Tool Inputs
@@ -115,12 +115,13 @@ Use these shapes:
   "rowNumber": 12,
   "expectedFingerprint": "abc123",
   "confirmed": true,
+  "userConfirmation": "Đúng, sửa dòng 12",
   "sets": [{ "set": 2, "reps": 8, "weightKg": null }]
 }
 ```
 
 ```json
-{ "rowNumber": 12, "expectedFingerprint": "abc123", "confirmed": true }
+{ "rowNumber": 12, "expectedFingerprint": "abc123", "confirmed": true, "userConfirmation": "Đúng, xóa dòng 12" }
 ```
 
 ## Safety

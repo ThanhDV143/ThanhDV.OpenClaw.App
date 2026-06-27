@@ -2,6 +2,8 @@
 
 OpenClaw tool plugin for querying and updating the gym workout Google Sheet.
 
+`gym_log_append` adds an exercise to the requested workout date while preserving date order. Existing dates are inserted at the end of that date block, missing dates between logged days are inserted before the next later day, and dates after the latest day are appended to the sheet.
+
 ## Local Test
 
 This workspace may not have Node on `PATH`. If needed, run tests with the bundled Codex Node executable:
@@ -26,7 +28,7 @@ Read tools use persistent alias memory outside the Google Sheet. Known aliases r
 
 ## Edit/Delete Strategy
 
-Use `gym_log_find` before `gym_log_update` or `gym_log_delete`. The find tool returns a row number and fingerprint. Update/delete rereads the sheet and refuses to apply if the fingerprint changed, so OpenClaw must ask the user to confirm the exact candidate before changing data.
+Use `gym_log_find` before `gym_log_update` or `gym_log_delete`. The find tool returns a row number and fingerprint. Update/delete rereads the sheet, refuses to apply if the fingerprint changed, and requires the user's explicit confirmation text, so OpenClaw must ask the user to confirm the exact candidate before changing data.
 
 ## Plan Strategy
 

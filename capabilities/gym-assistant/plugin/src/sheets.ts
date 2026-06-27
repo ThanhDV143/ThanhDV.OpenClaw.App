@@ -58,41 +58,66 @@ export async function appendWorkoutEntry(config: ResolvedGymConfig, input: Appen
   const rows = await readWorkoutRows(config);
   const entries = parseWorkoutRows(rows);
   const isoDate = input.date ?? todayIsoDate();
-  const dateCell = shouldWriteDateCell(entries, isoDate) ? formatSheetDate(isoDate) : "";
+  const placement = workoutAppendPlacement(rows, entries, isoDate);
   const row = buildAppendRow({
-    dateCell,
+    dateCell: placement.dateCell,
     exercise: input.exercise,
     sets: input.sets,
     restSeconds: input.restSeconds ?? config.defaultRestSeconds,
     note: input.note ?? "",
   });
 
-  const token = await getAccessToken(config.credentialsPath);
-  const range = encodeURIComponent(`${config.sheetName}!A:L`);
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${token}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      values: [row],
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Google Sheets append failed: ${response.status} ${await response.text()}`);
+  if (placement.insertBeforeExistingRow) {
+    await insertSheetRow(config, placement.rowNumber);
+    await writeWorkoutRow(config, placement.rowNumber, row);
+  } else {
+    await appendSheetRow(config, row);
   }
 
-  const rowNumber = rows.length + 1;
-  const parsed = parseWorkoutRows([...rows, row]);
-  const entry = parsed.find((candidate) => candidate.rowNumber === rowNumber);
+  const nextRows = rows.slice();
+  if (placement.insertBeforeExistingRow) {
+    nextRows.splice(placement.rowNumber - 1, 0, row);
+  } else {
+    nextRows.push(row);
+  }
+  const parsed = parseWorkoutRows(nextRows);
+  const entry = parsed.find((candidate) => candidate.rowNumber === placement.rowNumber);
   if (!entry) {
     throw new Error("Append succeeded but appended row could not be parsed.");
   }
 
   return { entry, row };
+}
+
+export function workoutAppendPlacement(
+  rows: unknown[][],
+  entries: WorkoutEntry[],
+  isoDate: string,
+): { rowNumber: number; dateCell: string; insertBeforeExistingRow: boolean } {
+  const sameDateEntries = entries.filter((entry) => entry.date === isoDate);
+  if (sameDateEntries.length > 0) {
+    const rowNumber = Math.max(...sameDateEntries.map((entry) => entry.rowNumber)) + 1;
+    return {
+      rowNumber,
+      dateCell: "",
+      insertBeforeExistingRow: rowNumber <= rows.length,
+    };
+  }
+
+  const nextDateEntry = entries.find((entry) => entry.date > isoDate);
+  if (nextDateEntry) {
+    return {
+      rowNumber: nextDateEntry.rowNumber,
+      dateCell: formatSheetDate(isoDate),
+      insertBeforeExistingRow: true,
+    };
+  }
+
+  return {
+    rowNumber: rows.length + 1,
+    dateCell: shouldWriteDateCell(entries, isoDate) ? formatSheetDate(isoDate) : "",
+    insertBeforeExistingRow: false,
+  };
 }
 
 export async function updateWorkoutEntry(
@@ -200,6 +225,26 @@ async function writeWorkoutRow(config: ResolvedGymConfig, rowNumber: number, row
   await updateSheetValues(config, range, [row]);
 }
 
+async function appendSheetRow(config: ResolvedGymConfig, row: Array<string | number>): Promise<void> {
+  const token = await getAccessToken(config.credentialsPath);
+  const range = encodeURIComponent(`${config.sheetName}!A:L`);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      values: [row],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Google Sheets append failed: ${response.status} ${await response.text()}`);
+  }
+}
+
 async function writeWorkoutCell(config: ResolvedGymConfig, rowNumber: number, column: string, value: string | number): Promise<void> {
   const range = `${config.sheetName}!${column}${rowNumber}:${column}${rowNumber}`;
   await updateSheetValues(config, range, [[value]]);
@@ -253,6 +298,38 @@ async function deleteSheetRow(config: ResolvedGymConfig, rowNumber: number): Pro
 
   if (!response.ok) {
     throw new Error(`Google Sheets delete row failed: ${response.status} ${await response.text()}`);
+  }
+}
+
+async function insertSheetRow(config: ResolvedGymConfig, rowNumber: number): Promise<void> {
+  const token = await getAccessToken(config.credentialsPath);
+  const sheetId = await getSheetId(config, token);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}:batchUpdate`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          insertDimension: {
+            range: {
+              sheetId,
+              dimension: "ROWS",
+              startIndex: rowNumber - 1,
+              endIndex: rowNumber,
+            },
+            inheritFromBefore: true,
+          },
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Google Sheets insert row failed: ${response.status} ${await response.text()}`);
   }
 }
 

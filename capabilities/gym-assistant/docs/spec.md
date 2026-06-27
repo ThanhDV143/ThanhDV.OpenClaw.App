@@ -80,7 +80,7 @@ List the current alias memory.
 
 ### `gym_log_append`
 
-Append one exercise row to the current workout date. Writes preserve the existing sheet shape and do not require an `Exercise ID` column.
+Add one exercise row to a workout date while preserving date order. If the date already exists, the tool inserts the row at the end of that date's block before the next date. If the date is new but falls between existing days, it inserts the row before the next later date. Only dates after the latest existing day append to the sheet. Writes preserve the existing sheet shape and do not require an `Exercise ID` column.
 
 ### `gym_log_find`
 
@@ -116,6 +116,7 @@ Input:
   "rowNumber": 12,
   "expectedFingerprint": "abc123",
   "confirmed": true,
+  "userConfirmation": "Đúng, sửa dòng 12",
   "sets": [{ "set": 2, "reps": 8, "weightKg": null }]
 }
 ```
@@ -127,7 +128,7 @@ Delete a confirmed workout row. If the deleted row is the first row for a date, 
 Input:
 
 ```json
-{ "rowNumber": 12, "expectedFingerprint": "abc123", "confirmed": true }
+{ "rowNumber": 12, "expectedFingerprint": "abc123", "confirmed": true, "userConfirmation": "Đúng, xóa dòng 12" }
 ```
 
 ### `gym_plan_status`
@@ -208,7 +209,7 @@ For write requests:
 For edit/delete requests:
 
 - Call `gym_log_find` first and ask the user to confirm the exact row.
-- Call `gym_log_update` or `gym_log_delete` only with the confirmed row number and fingerprint.
+- Call `gym_log_update` or `gym_log_delete` only with the confirmed row number, fingerprint, and confirmation text copied from the user's reply.
 - If the fingerprint check fails, ask the user to re-confirm from fresh candidates.
 
 ## Test Cases
@@ -222,5 +223,7 @@ For edit/delete requests:
 - Plan status returns the next session after the most recent classified workout day.
 - Appending the first exercise of a new date writes the date cell.
 - Appending another exercise on the same date leaves the date cell blank.
+- Adding an exercise to an older existing date inserts it inside that date block before the next date.
+- Adding an exercise to a missing date between two logged days inserts it before the next later day.
 - Updating a row requires a matching fingerprint.
 - Deleting the first row for a date preserves date inheritance for the next row.

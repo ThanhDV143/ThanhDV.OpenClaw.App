@@ -13,6 +13,7 @@ import {
   parseWorkoutRows,
   searchEntries,
 } from "../src/parser.ts";
+import { workoutAppendPlacement } from "../src/sheets.ts";
 
 const fixturePath = new URL("./fixtures/gym-sample.csv", import.meta.url);
 const planFixturePath = new URL("./fixtures/plan-sample.csv", import.meta.url);
@@ -130,6 +131,50 @@ test("append row builder writes 1-4 sets into the sheet shape", () => {
   assert.deepEqual(row, ["25/06/2026", "Pull-ups", 10, "", 8, "", "", "", 5, 20, 120, "test"]);
 });
 
+test("append placement inserts inside an existing workout date", async () => {
+  const csv = await readFile(fixturePath, "utf8");
+  const rows = parseCsv(csv);
+  const entries = parseWorkoutRows(rows);
+  const placement = workoutAppendPlacement(rows, entries, "2026-05-18");
+
+  assert.deepEqual(placement, {
+    rowNumber: 6,
+    dateCell: "",
+    insertBeforeExistingRow: true,
+  });
+});
+
+test("append placement writes a date cell for a new workout date", async () => {
+  const csv = await readFile(fixturePath, "utf8");
+  const rows = parseCsv(csv);
+  const entries = parseWorkoutRows(rows);
+  const placement = workoutAppendPlacement(rows, entries, "2026-06-22");
+
+  assert.deepEqual(placement, {
+    rowNumber: rows.length + 1,
+    dateCell: "22/06/2026",
+    insertBeforeExistingRow: false,
+  });
+});
+
+test("append placement inserts a new date between existing workout dates", () => {
+  const rows = [
+    ["Ngày", "Bài tập"],
+    ["", "Rep"],
+    ["21/06/2026", "Pull-ups", 9],
+    ["", "Dumbbell Bench Press", 10],
+    ["24/06/2026", "Barbell Squat", 8],
+  ];
+  const entries = parseWorkoutRows(rows);
+  const placement = workoutAppendPlacement(rows, entries, "2026-06-23");
+
+  assert.deepEqual(placement, {
+    rowNumber: 5,
+    dateCell: "23/06/2026",
+    insertBeforeExistingRow: true,
+  });
+});
+
 test("workout row fingerprint changes when row values change", () => {
   const before = workoutRowFingerprint(3, ["21/06/2026", "Pull-ups", "9"]);
   const after = workoutRowFingerprint(3, ["21/06/2026", "Pull-ups", "10"]);
@@ -142,6 +187,7 @@ test("update row builder patches provided sets and preserves other cells", () =>
     rowNumber: 3,
     expectedFingerprint: "fingerprint",
     confirmed: true,
+    userConfirmation: "Đúng, sửa dòng 3",
     sets: [{ set: 2, reps: 10, weightKg: null }],
     note: "fixed",
   });
