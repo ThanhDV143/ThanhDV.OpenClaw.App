@@ -29,6 +29,7 @@ Set plugin config or environment variables:
 ```text
 GYM_GOOGLE_SPREADSHEET_ID=<sheet-id>
 GYM_GOOGLE_SHEET_NAME=Gym
+GYM_GOOGLE_PLAN_SHEET_NAME=Plan
 GYM_GOOGLE_APPLICATION_CREDENTIALS=/opt/appdata/openclaw/plugin/gym/credentials/google-service-account.json
 GYM_DEFAULT_REST_SECONDS=120
 GYM_EXERCISE_ALIAS_PATH=/home/node/.openclaw/gym-assistant/exercise-aliases.json

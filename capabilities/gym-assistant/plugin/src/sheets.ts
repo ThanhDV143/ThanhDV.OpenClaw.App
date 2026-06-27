@@ -12,8 +12,16 @@ type ServiceAccountCredentials = {
 };
 
 export async function readWorkoutRows(config: ResolvedGymConfig): Promise<unknown[][]> {
+  return readSheetRows(config, config.sheetName, "A:L");
+}
+
+export async function readPlanRows(config: ResolvedGymConfig): Promise<unknown[][]> {
+  return readSheetRows(config, config.planSheetName, "A:Z");
+}
+
+async function readSheetRows(config: ResolvedGymConfig, sheetName: string, columns: string): Promise<unknown[][]> {
   const token = await getAccessToken(config.credentialsPath);
-  const range = encodeURIComponent(`${config.sheetName}!A:L`);
+  const range = encodeURIComponent(`${sheetName}!${columns}`);
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${range}?valueRenderOption=FORMATTED_VALUE`;
   const response = await fetch(url, {
     headers: {
@@ -122,4 +130,3 @@ function base64UrlJson(value: unknown): string {
 function base64Url(value: Buffer): string {
   return value.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
-

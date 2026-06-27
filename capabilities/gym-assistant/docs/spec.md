@@ -82,12 +82,44 @@ List the current alias memory.
 
 Append one exercise row to the current workout date. Writes preserve the existing sheet shape and do not require an `Exercise ID` column.
 
+### `gym_plan_status`
+
+Read the `Plan` sheet, classify recent workout days against the planned session columns, and return the next planned session.
+
+Input:
+
+```json
+{ "today": "2026-06-27", "recentLimit": 10 }
+```
+
+Output:
+
+```json
+{
+  "today": "2026-06-27",
+  "plan": {
+    "description": "Lịch tập có 4 buổi đan xen...",
+    "sessions": [
+      { "index": 0, "name": "Lower & Core", "exercises": ["Barbell Squat"] }
+    ]
+  },
+  "lastCompletedSession": {
+    "date": "2026-06-25",
+    "session": { "name": "Upper" },
+    "matchedExercises": ["Dumbbell Bench Press"]
+  },
+  "nextSession": { "name": "Lower & Core" },
+  "recentSessions": []
+}
+```
+
 ## Runtime Config
 
 ```json
 {
   "spreadsheetId": "google-sheet-id",
   "sheetName": "Gym",
+  "planSheetName": "Plan",
   "credentialsPath": "/opt/appdata/openclaw/plugin/gym/credentials/google-service-account.json",
   "defaultRestSeconds": 120,
   "aliasStorePath": "/home/node/.openclaw/gym-assistant/exercise-aliases.json"
@@ -112,6 +144,13 @@ For read questions:
 - After the user confirms two names are the same exercise, call `gym_alias_add`.
 - Do not silently choose fuzzy candidates as fact.
 
+For plan questions:
+
+- Call `gym_plan_status`.
+- Use `nextSession` for "hôm nay tôi tập gì".
+- Use `recentSessions` to answer questions about the latest lower/upper session or whether a previous session included an exercise.
+- Mention matched exercises if the classification may be weak.
+
 For write requests:
 
 - If the user gives no date, default to today in the OpenClaw server timezone.
@@ -125,6 +164,7 @@ For write requests:
 - Exact normalized exercise names still work.
 - Confirmed aliases search all raw names in that cluster.
 - Unknown aliases return `resolutionRequired` instead of guessed data.
+- The Plan sheet parses duplicate session names as separate slots.
+- Plan status returns the next session after the most recent classified workout day.
 - Appending the first exercise of a new date writes the date cell.
 - Appending another exercise on the same date leaves the date cell blank.
-

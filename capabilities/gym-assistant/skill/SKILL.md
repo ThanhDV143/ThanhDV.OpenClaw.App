@@ -34,6 +34,25 @@ When answering:
 Answer with the date, exercise, sets, reps, weights, rest time, and notes if present.
 If the tool returns `null` or an empty match list, say that no matching workout log entry was found.
 
+## Plan Requests
+
+For questions like:
+
+- "Hôm nay tôi tập gì?"
+- "Buổi lower gần nhất là hôm nào?"
+- "Buổi upper trước tôi có kéo xà không?"
+
+Use `gym_plan_status`.
+
+The Plan sheet describes how to choose the next workout and lists the planned exercises for each workout column. The plugin classifies recent workout days by comparing performed exercises against Plan sessions.
+
+When answering:
+
+- For "hôm nay tôi tập gì", use `nextSession` and mention the plan description when useful.
+- For "lower gần nhất" or "upper gần nhất", inspect `recentSessions` and match against `session.name`.
+- For "buổi upper trước có bài X không", inspect the newest matching `recentSessions` entry and compare both `performedExercises` and planned `session.exercises`.
+- If classification confidence is weak, mention the matched exercises used as evidence instead of overstating certainty.
+
 ## Write Requests
 
 For messages like:
@@ -62,6 +81,10 @@ Use these shapes:
 
 ```json
 { "canonicalName": "Pull-ups", "alias": "kéo xà" }
+```
+
+```json
+{ "recentLimit": 10 }
 ```
 
 ```json

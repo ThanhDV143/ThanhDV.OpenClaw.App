@@ -3,6 +3,7 @@ import type { GymPluginConfig, ResolvedGymConfig } from "./types.ts";
 export function resolveConfig(config: GymPluginConfig = {}, env: Record<string, string | undefined> = process.env): ResolvedGymConfig {
   const spreadsheetId = config.spreadsheetId ?? env.GYM_GOOGLE_SPREADSHEET_ID;
   const sheetName = config.sheetName ?? env.GYM_GOOGLE_SHEET_NAME ?? "Gym";
+  const planSheetName = config.planSheetName ?? env.GYM_GOOGLE_PLAN_SHEET_NAME ?? "Plan";
   const credentialsPath = config.credentialsPath ?? env.GYM_GOOGLE_APPLICATION_CREDENTIALS;
   const defaultRestSeconds = config.defaultRestSeconds ?? parseEnvNumber(env.GYM_DEFAULT_REST_SECONDS) ?? 120;
   const aliasStorePath =
@@ -21,6 +22,7 @@ export function resolveConfig(config: GymPluginConfig = {}, env: Record<string, 
   return {
     spreadsheetId,
     sheetName,
+    planSheetName,
     credentialsPath,
     defaultRestSeconds,
     aliasStorePath,

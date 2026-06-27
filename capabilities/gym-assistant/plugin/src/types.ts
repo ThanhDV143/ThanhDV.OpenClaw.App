@@ -16,6 +16,34 @@ export type WorkoutEntry = {
   note: string;
 };
 
+export type PlanSession = {
+  index: number;
+  id: string;
+  name: string;
+  exercises: string[];
+};
+
+export type TrainingPlan = {
+  description: string;
+  sessions: PlanSession[];
+};
+
+export type ClassifiedWorkoutSession = {
+  date: string;
+  session: PlanSession;
+  matchedExercises: string[];
+  performedExercises: string[];
+  score: number;
+};
+
+export type PlanStatus = {
+  today: string;
+  plan: TrainingPlan;
+  lastCompletedSession: ClassifiedWorkoutSession | null;
+  nextSession: PlanSession | null;
+  recentSessions: ClassifiedWorkoutSession[];
+};
+
 export type ExerciseAliasCluster = {
   id: string;
   canonicalName: string;
@@ -52,6 +80,7 @@ export type ExerciseResolveResult =
 export type GymPluginConfig = {
   spreadsheetId?: string;
   sheetName?: string;
+  planSheetName?: string;
   credentialsPath?: string;
   defaultRestSeconds?: number;
   aliasStorePath?: string;
@@ -60,6 +89,7 @@ export type GymPluginConfig = {
 export type ResolvedGymConfig = {
   spreadsheetId: string;
   sheetName: string;
+  planSheetName: string;
   credentialsPath: string;
   defaultRestSeconds: number;
   aliasStorePath: string;

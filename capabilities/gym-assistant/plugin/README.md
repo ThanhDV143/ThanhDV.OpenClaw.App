@@ -24,6 +24,10 @@ The repository also keeps `npm run plugin:validate` for environments where the r
 
 Read tools use persistent alias memory outside the Google Sheet. Known aliases resolve to one exercise cluster and search all confirmed names. Unknown aliases return `resolutionRequired` with candidates; the plugin does not silently choose a fuzzy match.
 
+## Plan Strategy
+
+`gym_plan_status` reads the `Plan` sheet and classifies recent workout days by comparing logged exercises with planned session columns. It returns the last completed session, the next planned session, and recent classified sessions so the agent can answer questions like "Hôm nay tôi tập gì?" or "Buổi lower gần nhất là hôm nào?".
+
 ## Alias Seed
 
 The plugin ships with `seed/exercise-aliases.seed.json` for first install. Copy it to the runtime alias store only when the store does not already exist:
@@ -44,6 +48,7 @@ The plugin reads config from OpenClaw plugin config first, then environment vari
 {
   "spreadsheetId": "google-sheet-id",
   "sheetName": "Gym",
+  "planSheetName": "Plan",
   "credentialsPath": "/opt/appdata/openclaw/plugin/gym/credentials/google-service-account.json",
   "defaultRestSeconds": 120,
   "aliasStorePath": "/home/node/.openclaw/gym-assistant/exercise-aliases.json"

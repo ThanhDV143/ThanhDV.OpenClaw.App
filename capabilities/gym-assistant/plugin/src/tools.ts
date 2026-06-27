@@ -1,9 +1,10 @@
 import type { AddExerciseAliasInput, AppendWorkoutInput, GymPluginConfig } from "./types.ts";
 import { addExerciseAlias, readExerciseAliasStore, writeExerciseAliasStore } from "./alias-store.ts";
 import { resolveExercise, searchEntriesByCluster } from "./exercise-resolver.ts";
+import { buildPlanStatus, parsePlanRows } from "./plan.ts";
 import { parseWorkoutRows } from "./parser.ts";
 import { resolveConfig } from "./config.ts";
-import { appendWorkoutEntry, readWorkoutRows } from "./sheets.ts";
+import { appendWorkoutEntry, readPlanRows, readWorkoutRows } from "./sheets.ts";
 
 export async function gymLogLatest(params: { exercise: string; date?: string }, config: GymPluginConfig = {}) {
   const resolvedConfig = resolveConfig(config);
@@ -85,4 +86,39 @@ export async function gymAliasAdd(params: AddExerciseAliasInput, config: GymPlug
     aliasStorePath: resolvedConfig.aliasStorePath,
     clusters: nextStore.clusters,
   };
+}
+
+export async function gymPlanStatus(params: { today?: string; recentLimit?: number } = {}, config: GymPluginConfig = {}) {
+  const resolvedConfig = resolveConfig(config);
+  const [workoutRows, planRows, aliasStore] = await Promise.all([
+    readWorkoutRows(resolvedConfig),
+    readPlanRows(resolvedConfig),
+    readExerciseAliasStore(resolvedConfig.aliasStorePath),
+  ]);
+
+  return buildPlanStatus({
+    today: params.today ?? todayIsoDate(),
+    plan: parsePlanRows(planRows),
+    entries: parseWorkoutRows(workoutRows),
+    aliasStore,
+    recentLimit: params.recentLimit,
+  });
+}
+
+function todayIsoDate(): string {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone: process.env.TZ ?? "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  if (!year || !month || !day) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  return `${year}-${month}-${day}`;
 }

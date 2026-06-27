@@ -1,5 +1,5 @@
 import { defineToolPlugin } from "openclaw/plugin-sdk/tool-plugin";
-import { gymAliasAdd, gymAliasList, gymLogAppend, gymLogLatest, gymLogSearch } from "./tools.ts";
+import { gymAliasAdd, gymAliasList, gymLogAppend, gymLogLatest, gymLogSearch, gymPlanStatus } from "./tools.ts";
 
 const WorkoutSetSchema = {
   type: "object",
@@ -18,6 +18,7 @@ const ConfigSchema = {
   properties: {
     spreadsheetId: { type: "string", description: "Google Sheet spreadsheet ID." },
     sheetName: { type: "string", description: "Workout sheet/tab name." },
+    planSheetName: { type: "string", description: "Training plan sheet/tab name." },
     credentialsPath: { type: "string", description: "Path to Google service account JSON." },
     defaultRestSeconds: { type: "number", description: "Default rest time in seconds." },
     aliasStorePath: { type: "string", description: "Path to persistent exercise alias memory JSON." },
@@ -56,6 +57,20 @@ export default defineToolPlugin({
         },
       },
       execute: (params, config) => gymAliasAdd(params, config),
+    }),
+    tool({
+      name: "gym_plan_status",
+      label: "Gym Plan Status",
+      description: "Read the Plan sheet, classify recent workout days, and return the next planned session.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          today: { type: "string", description: "Optional ISO date yyyy-mm-dd. Defaults to today." },
+          recentLimit: { type: "number", description: "Number of recent classified workout sessions to return." },
+        },
+      },
+      execute: (params, config) => gymPlanStatus(params, config),
     }),
     tool({
       name: "gym_log_latest",

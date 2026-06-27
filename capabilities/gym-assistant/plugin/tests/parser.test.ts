@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { addExerciseAlias, EMPTY_ALIAS_STORE } from "../src/alias-store.ts";
 import { parseCsv } from "../src/csv.ts";
 import { resolveExercise, searchEntriesByCluster } from "../src/exercise-resolver.ts";
+import { buildPlanStatus, parsePlanRows } from "../src/plan.ts";
 import {
   buildAppendRow,
   latestEntry,
@@ -13,10 +14,16 @@ import {
 } from "../src/parser.ts";
 
 const fixturePath = new URL("./fixtures/gym-sample.csv", import.meta.url);
+const planFixturePath = new URL("./fixtures/plan-sample.csv", import.meta.url);
 
 async function loadEntries() {
   const csv = await readFile(fixturePath, "utf8");
   return parseWorkoutRows(parseCsv(csv));
+}
+
+async function loadPlan() {
+  const csv = await readFile(planFixturePath, "utf8");
+  return parsePlanRows(parseCsv(csv));
 }
 
 test("blank date cells inherit the previous date", async () => {
@@ -120,4 +127,31 @@ test("append row builder writes 1-4 sets into the sheet shape", () => {
   });
 
   assert.deepEqual(row, ["25/06/2026", "Pull-ups", 10, "", 8, "", "", "", 5, 20, 120, "test"]);
+});
+
+test("plan parser reads description and duplicate session columns", async () => {
+  const plan = await loadPlan();
+
+  assert.equal(plan.sessions.length, 4);
+  assert.equal(plan.sessions[0].name, "Lower & Core");
+  assert.equal(plan.sessions[1].name, "Upper");
+  assert.equal(plan.sessions[2].id, "lower_core_3");
+  assert.equal(plan.sessions[0].exercises[0], "Barbell Squat");
+  assert.ok(plan.description.includes("Lịch tập có 4 buổi đan xen"));
+});
+
+test("plan status classifies recent workout days and returns the next session", async () => {
+  const entries = await loadEntries();
+  const plan = await loadPlan();
+  const status = buildPlanStatus({
+    today: "2026-06-22",
+    plan,
+    entries,
+    aliasStore: EMPTY_ALIAS_STORE,
+  });
+
+  assert.equal(status.lastCompletedSession?.date, "2026-06-21");
+  assert.equal(status.lastCompletedSession?.session.name, "Upper");
+  assert.equal(status.nextSession?.id, "lower_core_3");
+  assert.equal(status.recentSessions[0].matchedExercises.includes("Dumbbell Bench Press"), true);
 });

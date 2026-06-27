@@ -10,6 +10,7 @@
     "tools": [
       "gym_alias_list",
       "gym_alias_add",
+      "gym_plan_status",
       "gym_log_latest",
       "gym_log_search",
       "gym_log_append"
@@ -26,6 +27,10 @@
       "sheetName": {
         "type": "string",
         "description": "Workout sheet/tab name."
+      },
+      "planSheetName": {
+        "type": "string",
+        "description": "Training plan sheet/tab name."
       },
       "credentialsPath": {
         "type": "string",
