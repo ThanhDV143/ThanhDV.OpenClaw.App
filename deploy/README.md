@@ -42,3 +42,37 @@ docker exec openclaw-gateway sh -lc 'node /app/dist/extensions/gym-assistant/scr
 ```
 
 This command does not overwrite an existing alias store.
+
+### Upload plugin artifact from Windows
+
+Download the GitHub Actions artifact, then run the upload wizard. It asks for the zip path, server IP, SSH user, and remote plugin path.
+
+Double click:
+
+```text
+deploy/upload-gym-assistant.cmd
+```
+
+Or run manually:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\upload-gym-assistant.ps1
+```
+
+Defaults:
+
+```text
+Artifact: ./gym-assistant-dist.zip
+Server: thanhdv@192.168.1.103
+Remote path: /opt/appdata/openclaw/plugin/gym/plugin
+```
+
+Override when needed:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\upload-gym-assistant.ps1 `
+  -ArtifactZip "C:\Users\ThanhDV\Downloads\gym-assistant-dist.zip" `
+  -Server "192.168.1.103" `
+  -User "thanhdv" `
+  -RemotePath "/opt/appdata/openclaw/plugin/gym/plugin"
+```
