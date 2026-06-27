@@ -63,9 +63,19 @@ For messages like:
 Use:
 
 - `gym_log_append` when adding a new exercise row.
+- `gym_log_find` before editing or deleting any existing row.
+- `gym_log_update` only after the user confirms the exact row from `gym_log_find`.
+- `gym_log_delete` only after the user confirms the exact row from `gym_log_find`.
 
 If the user does not give a date, default to today's date in the OpenClaw server timezone. Confirm exactly what was written after the tool succeeds.
-Do not edit or delete existing rows in the MVP; ask the user to make corrections manually in the sheet for now.
+
+For edit/delete requests:
+
+- First call `gym_log_find` with the exercise/date clues from the user.
+- Show the likely row(s) with date, exercise, sets, rest, note, and row number.
+- Ask one short confirmation question before changing data.
+- After the user confirms, call `gym_log_update` or `gym_log_delete` with the exact `rowNumber`, `expectedFingerprint`, and `confirmed: true`.
+- If the update/delete tool says the row changed after confirmation, stop and call `gym_log_find` again.
 
 ## Tool Inputs
 
@@ -96,8 +106,26 @@ Use these shapes:
 }
 ```
 
+```json
+{ "exercise": "Pull-ups", "date": "2026-06-27", "limit": 3 }
+```
+
+```json
+{
+  "rowNumber": 12,
+  "expectedFingerprint": "abc123",
+  "confirmed": true,
+  "sets": [{ "set": 2, "reps": 8, "weightKg": null }]
+}
+```
+
+```json
+{ "rowNumber": 12, "expectedFingerprint": "abc123", "confirmed": true }
+```
+
 ## Safety
 
 - Do not guess missing exercise names.
 - Do not silently fix suspicious sheet data.
+- Do not call update/delete before the user confirms a `gym_log_find` candidate.
 - Do not expose Google credentials or spreadsheet IDs in chat.

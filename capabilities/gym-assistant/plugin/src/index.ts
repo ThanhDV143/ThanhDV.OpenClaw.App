@@ -1,5 +1,15 @@
 import { defineToolPlugin } from "openclaw/plugin-sdk/tool-plugin";
-import { gymAliasAdd, gymAliasList, gymLogAppend, gymLogLatest, gymLogSearch, gymPlanStatus } from "./tools.ts";
+import {
+  gymAliasAdd,
+  gymAliasList,
+  gymLogAppend,
+  gymLogDelete,
+  gymLogFind,
+  gymLogLatest,
+  gymLogSearch,
+  gymLogUpdate,
+  gymPlanStatus,
+} from "./tools.ts";
 
 const WorkoutSetSchema = {
   type: "object",
@@ -125,6 +135,67 @@ export default defineToolPlugin({
         },
       },
       execute: (params, config) => gymLogAppend(params, config),
+    }),
+    tool({
+      name: "gym_log_find",
+      label: "Gym Log Find",
+      description:
+        "Find workout log candidates before an edit or delete. Returns row numbers and fingerprints that must be confirmed before applying changes.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          date: { type: "string", description: "Optional ISO date yyyy-mm-dd to restrict candidates to one day." },
+          exercise: { type: "string", description: "Optional exercise name or alias." },
+          limit: { type: "number", description: "Maximum number of candidates to return." },
+        },
+      },
+      execute: (params, config) => gymLogFind(params, config),
+    }),
+    tool({
+      name: "gym_log_update",
+      label: "Gym Log Update",
+      description:
+        "Update a confirmed workout log row. Requires rowNumber, expectedFingerprint, and confirmed=true from a prior gym_log_find result.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        required: ["rowNumber", "expectedFingerprint", "confirmed"],
+        properties: {
+          rowNumber: { type: "number", description: "Google Sheet row number from gym_log_find." },
+          expectedFingerprint: { type: "string", description: "Fingerprint from gym_log_find for the exact row." },
+          confirmed: { enum: [true], description: "Must be true after the user confirms the exact row." },
+          date: { type: "string", description: "Optional new ISO date yyyy-mm-dd." },
+          exercise: { type: "string", description: "Optional new exercise name." },
+          sets: {
+            type: "array",
+            minItems: 1,
+            maxItems: 4,
+            items: WorkoutSetSchema,
+            description: "Optional set patches. Only provided set numbers are changed.",
+          },
+          restSeconds: { type: ["number", "null"], description: "Optional new rest time in seconds." },
+          note: { type: "string", description: "Optional new note." },
+        },
+      },
+      execute: (params, config) => gymLogUpdate(params, config),
+    }),
+    tool({
+      name: "gym_log_delete",
+      label: "Gym Log Delete",
+      description:
+        "Delete a confirmed workout log row. Requires rowNumber, expectedFingerprint, and confirmed=true from a prior gym_log_find result.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        required: ["rowNumber", "expectedFingerprint", "confirmed"],
+        properties: {
+          rowNumber: { type: "number", description: "Google Sheet row number from gym_log_find." },
+          expectedFingerprint: { type: "string", description: "Fingerprint from gym_log_find for the exact row." },
+          confirmed: { enum: [true], description: "Must be true after the user confirms the exact row." },
+        },
+      },
+      execute: (params, config) => gymLogDelete(params, config),
     }),
   ],
 });

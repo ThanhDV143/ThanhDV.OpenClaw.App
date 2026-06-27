@@ -13,7 +13,10 @@
       "gym_plan_status",
       "gym_log_latest",
       "gym_log_search",
-      "gym_log_append"
+      "gym_log_append",
+      "gym_log_find",
+      "gym_log_update",
+      "gym_log_delete"
     ]
   },
   "configSchema": {

@@ -1,6 +1,6 @@
 # Gym Assistant Plugin
 
-OpenClaw tool plugin for querying and appending to the gym workout Google Sheet.
+OpenClaw tool plugin for querying and updating the gym workout Google Sheet.
 
 ## Local Test
 
@@ -23,6 +23,10 @@ The repository also keeps `npm run plugin:validate` for environments where the r
 ## Read Strategy
 
 Read tools use persistent alias memory outside the Google Sheet. Known aliases resolve to one exercise cluster and search all confirmed names. Unknown aliases return `resolutionRequired` with candidates; the plugin does not silently choose a fuzzy match.
+
+## Edit/Delete Strategy
+
+Use `gym_log_find` before `gym_log_update` or `gym_log_delete`. The find tool returns a row number and fingerprint. Update/delete rereads the sheet and refuses to apply if the fingerprint changed, so OpenClaw must ask the user to confirm the exact candidate before changing data.
 
 ## Plan Strategy
 

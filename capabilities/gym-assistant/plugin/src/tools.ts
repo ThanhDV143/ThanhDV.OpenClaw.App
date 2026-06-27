@@ -1,10 +1,19 @@
-import type { AddExerciseAliasInput, AppendWorkoutInput, GymPluginConfig } from "./types.ts";
+import type {
+  AddExerciseAliasInput,
+  AppendWorkoutInput,
+  DeleteWorkoutInput,
+  FindWorkoutInput,
+  GymPluginConfig,
+  UpdateWorkoutInput,
+  WorkoutEntry,
+} from "./types.ts";
 import { addExerciseAlias, readExerciseAliasStore, writeExerciseAliasStore } from "./alias-store.ts";
+import { workoutLogCandidate } from "./edits.ts";
 import { resolveExercise, searchEntriesByCluster } from "./exercise-resolver.ts";
 import { buildPlanStatus, parsePlanRows } from "./plan.ts";
 import { parseWorkoutRows } from "./parser.ts";
 import { resolveConfig } from "./config.ts";
-import { appendWorkoutEntry, readPlanRows, readWorkoutRows } from "./sheets.ts";
+import { appendWorkoutEntry, deleteWorkoutEntry, readPlanRows, readWorkoutRows, updateWorkoutEntry } from "./sheets.ts";
 
 export async function gymLogLatest(params: { exercise: string; date?: string }, config: GymPluginConfig = {}) {
   const resolvedConfig = resolveConfig(config);
@@ -65,6 +74,58 @@ export async function gymLogAppend(params: AppendWorkoutInput, config: GymPlugin
   };
 }
 
+export async function gymLogFind(params: FindWorkoutInput, config: GymPluginConfig = {}) {
+  if (!params.exercise && !params.date) {
+    throw new Error("gym_log_find requires at least exercise or date.");
+  }
+
+  const resolvedConfig = resolveConfig(config);
+  const rows = await readWorkoutRows(resolvedConfig);
+  const entries = parseWorkoutRows(rows);
+  const limit = safeLimit(params.limit ?? 5);
+
+  if (!params.exercise) {
+    return {
+      exercise: null,
+      date: params.date ?? null,
+      resolution: null,
+      matches: newestFirst(entries.filter((entry) => entry.date === params.date))
+        .slice(0, limit)
+        .map((entry) => workoutLogCandidate(entry, rows)),
+    };
+  }
+
+  const store = await readExerciseAliasStore(resolvedConfig.aliasStorePath);
+  const resolution = resolveExercise(params.exercise, entries, store);
+  if (resolution.status !== "resolved") {
+    return {
+      exercise: params.exercise,
+      date: params.date ?? null,
+      resolution,
+      matches: [],
+    };
+  }
+
+  return {
+    exercise: params.exercise,
+    date: params.date ?? null,
+    resolution,
+    matches: searchEntriesByCluster(entries, resolution.cluster, limit, params.date).map((entry) =>
+      workoutLogCandidate(entry, rows),
+    ),
+  };
+}
+
+export async function gymLogUpdate(params: UpdateWorkoutInput, config: GymPluginConfig = {}) {
+  const resolvedConfig = resolveConfig(config);
+  return updateWorkoutEntry(resolvedConfig, params);
+}
+
+export async function gymLogDelete(params: DeleteWorkoutInput, config: GymPluginConfig = {}) {
+  const resolvedConfig = resolveConfig(config);
+  return deleteWorkoutEntry(resolvedConfig, params);
+}
+
 export async function gymAliasList(_params: Record<string, never> = {}, config: GymPluginConfig = {}) {
   const resolvedConfig = resolveConfig(config);
   const store = await readExerciseAliasStore(resolvedConfig.aliasStorePath);
@@ -121,4 +182,18 @@ function todayIsoDate(): string {
   }
 
   return `${year}-${month}-${day}`;
+}
+
+function safeLimit(value: number): number {
+  return Math.max(1, Math.min(50, Math.floor(value || 5)));
+}
+
+function newestFirst(entries: WorkoutEntry[]): WorkoutEntry[] {
+  return entries.slice().sort((left, right) => {
+    const byDate = right.date.localeCompare(left.date);
+    if (byDate !== 0) {
+      return byDate;
+    }
+    return right.rowNumber - left.rowNumber;
+  });
 }

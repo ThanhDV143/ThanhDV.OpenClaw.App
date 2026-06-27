@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { addExerciseAlias, EMPTY_ALIAS_STORE } from "../src/alias-store.ts";
 import { parseCsv } from "../src/csv.ts";
+import { buildUpdatedWorkoutRow, nextRowNeedsDatePromotion, workoutRowFingerprint } from "../src/edits.ts";
 import { resolveExercise, searchEntriesByCluster } from "../src/exercise-resolver.ts";
 import { buildPlanStatus, parsePlanRows } from "../src/plan.ts";
 import {
@@ -127,6 +128,35 @@ test("append row builder writes 1-4 sets into the sheet shape", () => {
   });
 
   assert.deepEqual(row, ["25/06/2026", "Pull-ups", 10, "", 8, "", "", "", 5, 20, 120, "test"]);
+});
+
+test("workout row fingerprint changes when row values change", () => {
+  const before = workoutRowFingerprint(3, ["21/06/2026", "Pull-ups", "9"]);
+  const after = workoutRowFingerprint(3, ["21/06/2026", "Pull-ups", "10"]);
+
+  assert.notEqual(before, after);
+});
+
+test("update row builder patches provided sets and preserves other cells", () => {
+  const row = buildUpdatedWorkoutRow(["21/06/2026", "Pull-ups", "9", "", "8", "", "", "", "", "", "120", "old"], {
+    rowNumber: 3,
+    expectedFingerprint: "fingerprint",
+    confirmed: true,
+    sets: [{ set: 2, reps: 10, weightKg: null }],
+    note: "fixed",
+  });
+
+  assert.deepEqual(row, ["21/06/2026", "Pull-ups", "9", "", 10, "", "", "", "", "", "120", "fixed"]);
+});
+
+test("deleting a dated first row promotes the date to the next blank-date row", async () => {
+  const csv = await readFile(fixturePath, "utf8");
+  const rows = parseCsv(csv);
+  const entries = parseWorkoutRows(rows);
+  const firstEntry = entries.find((entry) => entry.rowNumber === 3);
+
+  assert.equal(firstEntry?.date, "2026-05-18");
+  assert.equal(firstEntry ? nextRowNeedsDatePromotion(rows, firstEntry) : false, true);
 });
 
 test("plan parser reads description and duplicate session columns", async () => {

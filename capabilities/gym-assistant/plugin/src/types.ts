@@ -108,3 +108,31 @@ export type AddExerciseAliasInput = {
   alias: string;
   id?: string;
 };
+
+export type WorkoutLogCandidate = {
+  entry: WorkoutEntry;
+  fingerprint: string;
+};
+
+export type FindWorkoutInput = {
+  exercise?: string;
+  date?: string;
+  limit?: number;
+};
+
+export type UpdateWorkoutInput = {
+  rowNumber: number;
+  expectedFingerprint: string;
+  confirmed: true;
+  date?: string;
+  exercise?: string;
+  sets?: WorkoutSet[];
+  restSeconds?: number | null;
+  note?: string;
+};
+
+export type DeleteWorkoutInput = {
+  rowNumber: number;
+  expectedFingerprint: string;
+  confirmed: true;
+};

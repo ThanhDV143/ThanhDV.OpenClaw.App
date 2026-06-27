@@ -1,6 +1,14 @@
 import { createPrivateKey, sign } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import type { AppendWorkoutInput, ResolvedGymConfig, WorkoutEntry } from "./types.ts";
+import type { AppendWorkoutInput, DeleteWorkoutInput, ResolvedGymConfig, UpdateWorkoutInput, WorkoutEntry } from "./types.ts";
+import {
+  assertConfirmed,
+  assertEditableRow,
+  assertFingerprintMatches,
+  buildUpdatedWorkoutRow,
+  hasWorkoutPatch,
+  nextRowNeedsDatePromotion,
+} from "./edits.ts";
 import { buildAppendRow, formatSheetDate, parseWorkoutRows } from "./parser.ts";
 
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
@@ -9,6 +17,15 @@ const TOKEN_URL = "https://oauth2.googleapis.com/token";
 type ServiceAccountCredentials = {
   client_email: string;
   private_key: string;
+};
+
+type SpreadsheetMetadata = {
+  sheets?: Array<{
+    properties?: {
+      sheetId?: number;
+      title?: string;
+    };
+  }>;
 };
 
 export async function readWorkoutRows(config: ResolvedGymConfig): Promise<unknown[][]> {
@@ -78,6 +95,69 @@ export async function appendWorkoutEntry(config: ResolvedGymConfig, input: Appen
   return { entry, row };
 }
 
+export async function updateWorkoutEntry(
+  config: ResolvedGymConfig,
+  input: UpdateWorkoutInput,
+): Promise<{ updated: true; before: WorkoutEntry; after: WorkoutEntry; row: Array<string | number> }> {
+  assertConfirmed(input);
+  if (!hasWorkoutPatch(input)) {
+    throw new Error("Update request must include at least one field to change.");
+  }
+
+  const rows = await readWorkoutRows(config);
+  assertEditableRow(input.rowNumber, rows);
+  const currentRow = rows[input.rowNumber - 1] ?? [];
+  assertFingerprintMatches(input.rowNumber, currentRow, input.expectedFingerprint);
+
+  const before = parseWorkoutRows(rows).find((entry) => entry.rowNumber === input.rowNumber);
+  if (!before) {
+    throw new Error(`Workout row ${input.rowNumber} is not a parsed workout entry.`);
+  }
+  if (input.date !== undefined && nextRowNeedsDatePromotion(rows, before)) {
+    throw new Error(
+      `Changing date on row ${input.rowNumber} would also affect following blank-date workout rows. Edit the date in Google Sheets manually or split the workout day first.`,
+    );
+  }
+
+  const row = buildUpdatedWorkoutRow(currentRow, input);
+  await writeWorkoutRow(config, input.rowNumber, row);
+
+  const nextRows = rows.slice();
+  nextRows[input.rowNumber - 1] = row;
+  const after = parseWorkoutRows(nextRows).find((entry) => entry.rowNumber === input.rowNumber);
+  if (!after) {
+    throw new Error(`Workout row ${input.rowNumber} was updated but could not be parsed.`);
+  }
+
+  return { updated: true, before, after, row };
+}
+
+export async function deleteWorkoutEntry(
+  config: ResolvedGymConfig,
+  input: DeleteWorkoutInput,
+): Promise<{ deleted: true; deletedEntry: WorkoutEntry; promotedDateToNextRow: boolean }> {
+  assertConfirmed(input);
+  const rows = await readWorkoutRows(config);
+  assertEditableRow(input.rowNumber, rows);
+  const currentRow = rows[input.rowNumber - 1] ?? [];
+  assertFingerprintMatches(input.rowNumber, currentRow, input.expectedFingerprint);
+
+  const deletedEntry = parseWorkoutRows(rows).find((entry) => entry.rowNumber === input.rowNumber);
+  if (!deletedEntry) {
+    throw new Error(`Workout row ${input.rowNumber} is not a parsed workout entry.`);
+  }
+
+  const currentDateCell = String(currentRow[0] ?? "").trim();
+  const promotedDateToNextRow = Boolean(currentDateCell && nextRowNeedsDatePromotion(rows, deletedEntry));
+  if (promotedDateToNextRow) {
+    await writeWorkoutCell(config, input.rowNumber + 1, "A", formatSheetDate(deletedEntry.date));
+  }
+
+  await deleteSheetRow(config, input.rowNumber);
+
+  return { deleted: true, deletedEntry, promotedDateToNextRow };
+}
+
 async function getAccessToken(credentialsPath: string): Promise<string> {
   const credentials = JSON.parse(await readFile(credentialsPath, "utf8")) as ServiceAccountCredentials;
   const now = Math.floor(Date.now() / 1000);
@@ -113,6 +193,88 @@ async function getAccessToken(credentialsPath: string): Promise<string> {
   }
 
   return data.access_token;
+}
+
+async function writeWorkoutRow(config: ResolvedGymConfig, rowNumber: number, row: Array<string | number>): Promise<void> {
+  const range = `${config.sheetName}!A${rowNumber}:L${rowNumber}`;
+  await updateSheetValues(config, range, [row]);
+}
+
+async function writeWorkoutCell(config: ResolvedGymConfig, rowNumber: number, column: string, value: string | number): Promise<void> {
+  const range = `${config.sheetName}!${column}${rowNumber}:${column}${rowNumber}`;
+  await updateSheetValues(config, range, [[value]]);
+}
+
+async function updateSheetValues(config: ResolvedGymConfig, range: string, values: Array<Array<string | number>>): Promise<void> {
+  const token = await getAccessToken(config.credentialsPath);
+  const encodedRange = encodeURIComponent(range);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${encodedRange}?valueInputOption=USER_ENTERED`;
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      values,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Google Sheets update failed: ${response.status} ${await response.text()}`);
+  }
+}
+
+async function deleteSheetRow(config: ResolvedGymConfig, rowNumber: number): Promise<void> {
+  const token = await getAccessToken(config.credentialsPath);
+  const sheetId = await getSheetId(config, token);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}:batchUpdate`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId,
+              dimension: "ROWS",
+              startIndex: rowNumber - 1,
+              endIndex: rowNumber,
+            },
+          },
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Google Sheets delete row failed: ${response.status} ${await response.text()}`);
+  }
+}
+
+async function getSheetId(config: ResolvedGymConfig, token: string): Promise<number> {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}?fields=sheets.properties(sheetId,title)`;
+  const response = await fetch(url, {
+    headers: {
+      authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Google Sheets metadata read failed: ${response.status} ${await response.text()}`);
+  }
+
+  const data = (await response.json()) as SpreadsheetMetadata;
+  const sheetId = data.sheets?.find((sheet) => sheet.properties?.title === config.sheetName)?.properties?.sheetId;
+  if (sheetId === undefined) {
+    throw new Error(`Google Sheet tab not found: ${config.sheetName}`);
+  }
+
+  return sheetId;
 }
 
 function shouldWriteDateCell(entries: WorkoutEntry[], isoDate: string): boolean {
