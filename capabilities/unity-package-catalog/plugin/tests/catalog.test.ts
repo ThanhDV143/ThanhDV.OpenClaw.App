@@ -7,7 +7,7 @@ import { indexFreshness, readPackageIndex, writePackageIndex } from "../src/inde
 import { nasFingerprint, nasPackageId } from "../src/nas.ts";
 import { scoreRecord } from "../src/search.ts";
 import type { PackageIndex, PackageRecord } from "../src/types.ts";
-import { unityPackageDelete, unityPackageSearch } from "../src/tools.ts";
+import { unityPackageDelete, unityPackageImportFile, unityPackageSearch } from "../src/tools.ts";
 import {
   buildVersionRemovalPackument,
   encodedPackagePath,
@@ -16,8 +16,8 @@ import {
 } from "../src/verdaccio.ts";
 
 test("scoped Verdaccio package names are encoded as one path segment", () => {
-  assert.equal(encodedPackagePath("@thanhdv/save-game"), "%40thanhdv%2Fsave-game");
-  assert.equal(encodedPackagePath("com.thanhdv.save-game"), "com.thanhdv.save-game");
+  assert.equal(encodedPackagePath("@studio/save-game"), "%40studio%2Fsave-game");
+  assert.equal(encodedPackagePath("com.example.save-game"), "com.example.save-game");
 });
 
 test("index freshness reports stale and missing states", () => {
@@ -27,7 +27,7 @@ test("index freshness reports stale and missing states", () => {
     schemaVersion: 1,
     generatedAt: "2026-01-01T00:00:00.000Z",
     sources: {
-      verdaccio: { registryUrl: "https://upm.thanhdv.com", packageCount: 0, errors: [] },
+      verdaccio: { registryUrl: "https://verdaccio.example.local", packageCount: 0, errors: [] },
       nas: { roots: ["/data/unitypkgs"], packageCount: 0, errors: [] },
     },
     packages: [],
@@ -38,13 +38,13 @@ test("index freshness reports stale and missing states", () => {
 
 test("search scoring uses package purpose fields", () => {
   const record: PackageRecord = {
-    id: "verdaccio:com.thanhdv.save-game",
+    id: "verdaccio:com.example.save-game",
     source: "verdaccio",
-    name: "com.thanhdv.save-game",
+    name: "com.example.save-game",
     description: "Save system for Unity games",
     keywords: ["unity", "persistence"],
     fingerprint: "abc",
-    registryUrl: "https://upm.thanhdv.com",
+    registryUrl: "https://verdaccio.example.local",
     latestVersion: "1.0.0",
     versions: ["1.0.0"],
     distTags: { latest: "1.0.0" },
@@ -63,7 +63,7 @@ test("NAS ids and fingerprints are deterministic", () => {
 
 test("version delete removes version metadata and repairs latest tag", () => {
   const packument = {
-    name: "com.thanhdv.save-game",
+    name: "com.example.save-game",
     _rev: "3-rev",
     "dist-tags": { latest: "1.2.0", beta: "1.2.0" },
     versions: {
@@ -86,7 +86,7 @@ test("version delete removes version metadata and repairs latest tag", () => {
 
 test("Verdaccio fingerprints include revision and version dist data", () => {
   const packument = {
-    name: "com.thanhdv.save-game",
+    name: "com.example.save-game",
     _rev: "1-one",
     versions: {
       "1.0.0": { version: "1.0.0", dist: { shasum: "aaa" } },
@@ -124,7 +124,7 @@ test("NAS delete archives the file and removes it from the index", async () => {
 
   await writePackageIndex(
     {
-      verdaccioRegistryUrl: "https://upm.thanhdv.com",
+      verdaccioRegistryUrl: "https://verdaccio.example.local",
       verdaccioTokenEnvVar: "VERDACCIO_TOKEN",
       nasPackageRoots: [root],
       nasTrashRoot: trashRoot,
@@ -135,7 +135,7 @@ test("NAS delete archives the file and removes it from the index", async () => {
       schemaVersion: 1,
       generatedAt: new Date().toISOString(),
       sources: {
-        verdaccio: { registryUrl: "https://upm.thanhdv.com", packageCount: 0, errors: [] },
+        verdaccio: { registryUrl: "https://verdaccio.example.local", packageCount: 0, errors: [] },
         nas: { roots: [root], packageCount: 1, errors: [] },
       },
       packages: [
@@ -171,7 +171,7 @@ test("NAS delete archives the file and removes it from the index", async () => {
   assert.equal(await readFile(result.archivedPath, "utf8"), "package");
 
   const index = await readPackageIndex({
-    verdaccioRegistryUrl: "https://upm.thanhdv.com",
+    verdaccioRegistryUrl: "https://verdaccio.example.local",
     verdaccioTokenEnvVar: "VERDACCIO_TOKEN",
     nasPackageRoots: [root],
     nasTrashRoot: trashRoot,
@@ -180,4 +180,86 @@ test("NAS delete archives the file and removes it from the index", async () => {
   });
   assert.equal(index?.packages.length, 0);
   assert.equal(index?.sources.nas.packageCount, 0);
+});
+
+test("import file copies a .unitypackage into NAS root and updates the index", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "unity-package-catalog-"));
+  const root = join(dir, "packages");
+  const source = join(dir, "upload.unitypackage");
+  const indexPath = join(dir, "index.json");
+  await mkdir(root);
+  await writeFile(source, "uploaded package");
+
+  const result = await unityPackageImportFile(
+    {
+      sourceFilePath: source,
+      targetFolder: "tools/save",
+      targetName: "save-system.unitypackage",
+      confirmed: true,
+      userConfirmation: "xác nhận import",
+    },
+    { nasPackageRoots: [root], nasTrashRoot: join(root, ".trash"), indexPath },
+  );
+
+  assert.equal(result.imported, true);
+  assert.equal(await readFile(result.copiedTo, "utf8"), "uploaded package");
+
+  const index = await readPackageIndex({
+    verdaccioRegistryUrl: "https://verdaccio.example.local",
+    verdaccioTokenEnvVar: "VERDACCIO_TOKEN",
+    nasPackageRoots: [root],
+    nasTrashRoot: join(root, ".trash"),
+    indexPath,
+    indexMaxAgeHours: 24,
+  });
+
+  assert.equal(index?.packages.length, 1);
+  assert.equal(index?.sources.nas.packageCount, 1);
+  assert.equal(index?.packages[0]?.source, "nas");
+});
+
+test("import file rejects unsafe targets and duplicate names by default", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "unity-package-catalog-"));
+  const root = join(dir, "packages");
+  const source = join(dir, "upload.unitypackage");
+  await mkdir(root);
+  await writeFile(source, "uploaded package");
+
+  await assert.rejects(
+    () =>
+      unityPackageImportFile(
+        {
+          sourceFilePath: source,
+          targetFolder: "../escape",
+          confirmed: true,
+          userConfirmation: "xác nhận import",
+        },
+        { nasPackageRoots: [root], nasTrashRoot: join(root, ".trash"), indexPath: join(dir, "index.json") },
+      ),
+    /targetFolder cannot contain/,
+  );
+
+  await unityPackageImportFile(
+    {
+      sourceFilePath: source,
+      targetName: "upload.unitypackage",
+      confirmed: true,
+      userConfirmation: "xác nhận import",
+    },
+    { nasPackageRoots: [root], nasTrashRoot: join(root, ".trash"), indexPath: join(dir, "index.json") },
+  );
+
+  await assert.rejects(
+    () =>
+      unityPackageImportFile(
+        {
+          sourceFilePath: source,
+          targetName: "upload.unitypackage",
+          confirmed: true,
+          userConfirmation: "xác nhận import",
+        },
+        { nasPackageRoots: [root], nasTrashRoot: join(root, ".trash"), indexPath: join(dir, "index.json") },
+      ),
+    /EEXIST|exists/i,
+  );
 });

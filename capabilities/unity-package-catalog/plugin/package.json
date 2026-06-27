@@ -1,5 +1,5 @@
 {
-  "name": "@thanhdv/openclaw-unity-package-catalog",
+  "name": "@openclaw-local/unity-package-catalog",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -28,4 +28,3 @@
     ]
   }
 }
-

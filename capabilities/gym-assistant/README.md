@@ -191,10 +191,20 @@ gym-assistant-dist.zip
 
 Place the zip file anywhere on your local machine.
 
-Double click:
+Double click the generic plugin upload script:
 
 ```text
-deploy/upload-gym-assistant.cmd
+deploy/upload-openclaw-plugin.cmd
+```
+
+Or run it with the existing gym remote path:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\upload-openclaw-plugin.ps1 `
+  -ArtifactZip "C:\Users\<you>\Downloads\gym-assistant-dist.zip" `
+  -Server "<OPENCLAW_HOST>" `
+  -User "<SSH_USER>" `
+  -RemotePath "/opt/appdata/openclaw/plugin/gym/plugin"
 ```
 
 If the server requires an SSH password, the upload window will prompt for it.
@@ -274,5 +284,5 @@ npm run plugin:check
 If Node is not on `PATH` in this workspace, use the bundled Codex Node executable for tests:
 
 ```powershell
-& 'C:\Users\ThanhDV\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe' --test .\tests\*.test.ts
+& "$env:USERPROFILE\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" --test .\tests\*.test.ts
 ```

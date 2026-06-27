@@ -2,14 +2,14 @@
 
 OpenClaw tool plugin for indexing, searching, reading, and safely deleting Unity packages from:
 
-- Verdaccio registry: `https://upm.thanhdv.com`
+- Verdaccio registry: `<VERDACCIO_REGISTRY_URL>`
 - NAS-mounted `.unitypackage` files: `/data/unitypkgs`
 
 Default config:
 
 ```json
 {
-  "verdaccioRegistryUrl": "https://upm.thanhdv.com",
+  "verdaccioRegistryUrl": "<VERDACCIO_REGISTRY_URL>",
   "verdaccioTokenEnvVar": "VERDACCIO_TOKEN",
   "nasPackageRoots": ["/data/unitypkgs"],
   "nasTrashRoot": "/data/unitypkgs/.trash",
@@ -20,3 +20,4 @@ Default config:
 
 Deletion is always two-step: find a candidate, show it to the user, then delete only after a separate confirmation.
 
+Importing `.unitypackage` files is also confirmation-gated. `unity_package_import_file` copies a local file path that is already available inside the OpenClaw container into the configured NAS package root, refuses unsafe paths, avoids overwriting by default, and updates the index after a successful import.

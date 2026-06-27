@@ -2,7 +2,7 @@ import type { ResolvedConfig, UnityPackageCatalogConfig } from "./types.ts";
 
 export function resolveConfig(config: UnityPackageCatalogConfig = {}): ResolvedConfig {
   return {
-    verdaccioRegistryUrl: trimTrailingSlash(config.verdaccioRegistryUrl ?? "https://upm.thanhdv.com"),
+    verdaccioRegistryUrl: trimTrailingSlash(config.verdaccioRegistryUrl ?? "http://localhost:4873"),
     verdaccioTokenEnvVar: config.verdaccioTokenEnvVar ?? "VERDACCIO_TOKEN",
     nasPackageRoots: normalizeStringArray(config.nasPackageRoots, ["/data/unitypkgs"]),
     nasTrashRoot: config.nasTrashRoot ?? "/data/unitypkgs/.trash",
@@ -23,4 +23,3 @@ function positiveNumber(value: number | undefined, fallback: number): number {
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
 }
-

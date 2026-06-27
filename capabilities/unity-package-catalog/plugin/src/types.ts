@@ -80,6 +80,15 @@ export type GetInput = {
   id: string;
 };
 
+export type ImportFileInput = {
+  sourceFilePath: string;
+  targetFolder?: string;
+  targetName?: string;
+  overwrite?: boolean;
+  confirmed: true;
+  userConfirmation: string;
+};
+
 export type DeleteCandidateInput = {
   id?: string;
   query?: string;
@@ -107,4 +116,3 @@ export type DeleteCandidate = {
   warnings: string[];
   record: PackageRecord;
 };
-

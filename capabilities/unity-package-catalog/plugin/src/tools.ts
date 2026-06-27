@@ -1,13 +1,15 @@
 import { resolveConfig } from "./config.ts";
 import { buildPackageIndex, indexFreshness, readPackageIndex, writePackageIndex } from "./index-store.ts";
-import { archiveNasPackage, currentNasFingerprint, scanNasPackages } from "./nas.ts";
+import { archiveNasPackage, currentNasFingerprint, importNasPackageFile, scanNasPackages } from "./nas.ts";
 import { searchPackageRecords } from "./search.ts";
 import type {
   DeleteCandidate,
   DeleteCandidateInput,
   DeleteInput,
   GetInput,
+  ImportFileInput,
   NasPackageRecord,
+  PackageIndex,
   PackageRecord,
   RefreshInput,
   SearchInput,
@@ -85,6 +87,26 @@ export async function unityPackageGet(params: GetInput, config: UnityPackageCata
   return {
     freshness: indexFreshness(index, resolvedConfig.indexMaxAgeHours),
     package: record,
+  };
+}
+
+export async function unityPackageImportFile(params: ImportFileInput, config: UnityPackageCatalogConfig = {}) {
+  if (params.confirmed !== true || !params.userConfirmation.trim()) {
+    throw new Error("Import requires confirmed=true and a non-empty userConfirmation from a separate user reply.");
+  }
+
+  const resolvedConfig = resolveConfig(config);
+  const importResult = await importNasPackageFile(params, resolvedConfig);
+  const index = await readPackageIndex(resolvedConfig);
+  await writePackageIndex(resolvedConfig, upsertNasRecordInIndex(index, importResult.record, resolvedConfig));
+
+  return {
+    imported: true,
+    sourceFilePath: params.sourceFilePath,
+    copiedTo: importResult.copiedTo,
+    overwritten: importResult.overwritten,
+    indexUpdated: true,
+    package: summarizeRecord(importResult.record),
   };
 }
 
@@ -266,6 +288,35 @@ function resolveDeleteRecord(records: PackageRecord[], params: DeleteCandidateIn
 
 function findRecordById(records: PackageRecord[], id: string): PackageRecord | undefined {
   return records.find((record) => record.id === id);
+}
+
+function upsertNasRecordInIndex(index: PackageIndex | null, record: NasPackageRecord, config: ReturnType<typeof resolveConfig>): PackageIndex {
+  if (!index) {
+    return buildPackageIndex({
+      config,
+      verdaccioPackages: [],
+      verdaccioErrors: [],
+      nasPackages: [record],
+      nasErrors: [],
+    });
+  }
+
+  const existing = index.packages.find((current) => current.id === record.id);
+  const packages = existing
+    ? index.packages.map((current) => (current.id === record.id ? record : current))
+    : [...index.packages, record];
+
+  return {
+    ...index,
+    sources: {
+      ...index.sources,
+      nas: {
+        ...index.sources.nas,
+        packageCount: existing ? index.sources.nas.packageCount : index.sources.nas.packageCount + 1,
+      },
+    },
+    packages,
+  };
 }
 
 function removeRecordFromIndex(index: NonNullable<Awaited<ReturnType<typeof readPackageIndex>>>, record: PackageRecord) {

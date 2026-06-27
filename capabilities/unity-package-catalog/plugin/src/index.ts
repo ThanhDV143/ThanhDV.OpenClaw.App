@@ -3,6 +3,7 @@ import {
   unityPackageDelete,
   unityPackageDeleteCandidate,
   unityPackageGet,
+  unityPackageImportFile,
   unityPackageIndexRefresh,
   unityPackageSearch,
 } from "./tools.ts";
@@ -75,6 +76,42 @@ export default defineToolPlugin({
       execute: (params, config) => unityPackageGet(params, config),
     }),
     tool({
+      name: "unity_package_import_file",
+      label: "Unity Package Import File",
+      description:
+        "Import a confirmed .unitypackage file from a local attachment or download path into the configured NAS package root, then update the index.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        required: ["sourceFilePath", "confirmed", "userConfirmation"],
+        properties: {
+          sourceFilePath: {
+            type: "string",
+            description: "Local file path available inside the OpenClaw container, typically from a chat attachment or file-transfer tool.",
+          },
+          targetFolder: {
+            type: "string",
+            description: "Optional relative folder inside the NAS package root. Must not contain absolute or .. path segments.",
+          },
+          targetName: {
+            type: "string",
+            description: "Optional target file name. Must end with .unitypackage and must not include path separators.",
+          },
+          overwrite: {
+            type: "boolean",
+            description: "Overwrite an existing target file only when the user explicitly confirms replacement.",
+          },
+          confirmed: { enum: [true], description: "Must be true only after the user confirms the exact import target." },
+          userConfirmation: {
+            type: "string",
+            minLength: 1,
+            description: "Exact user confirmation text copied from the separate reply.",
+          },
+        },
+      },
+      execute: (params, config) => unityPackageImportFile(params, config),
+    }),
+    tool({
       name: "unity_package_delete_candidate",
       label: "Unity Package Delete Candidate",
       description:
@@ -118,4 +155,3 @@ export default defineToolPlugin({
     }),
   ],
 });
-

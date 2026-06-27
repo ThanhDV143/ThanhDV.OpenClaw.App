@@ -14,7 +14,7 @@ Analytics tools:
 This workspace may not have Node on `PATH`. If needed, run tests with the bundled Codex Node executable:
 
 ```powershell
-& 'C:\Users\ThanhDV\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe' --test .\tests\*.test.ts
+& "$env:USERPROFILE\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" --test .\tests\*.test.ts
 ```
 
 ## CI

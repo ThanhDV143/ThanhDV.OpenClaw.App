@@ -1,5 +1,5 @@
 {
-  "name": "@thanhdv/openclaw-gym-assistant",
+  "name": "@openclaw-local/gym-assistant",
   "version": "0.1.0",
   "private": true,
   "type": "module",

@@ -2,7 +2,7 @@
 setlocal
 
 set "SCRIPT_DIR=%~dp0"
-set "PS_SCRIPT=%SCRIPT_DIR%upload-gym-assistant.ps1"
+set "PS_SCRIPT=%SCRIPT_DIR%upload-openclaw-plugin.ps1"
 
 if not exist "%PS_SCRIPT%" (
   echo Missing PowerShell script:
@@ -24,3 +24,4 @@ if not "%EXIT_CODE%"=="0" (
 echo.
 echo Upload finished successfully.
 pause
+

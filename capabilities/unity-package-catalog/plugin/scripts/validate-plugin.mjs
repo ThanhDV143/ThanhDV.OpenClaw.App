@@ -9,6 +9,7 @@ const expectedTools = [
   "unity_package_index_refresh",
   "unity_package_search",
   "unity_package_get",
+  "unity_package_import_file",
   "unity_package_delete_candidate",
   "unity_package_delete",
 ];
@@ -36,4 +37,3 @@ if (!Array.isArray(pkg.files) || !pkg.files.includes("dist")) {
 }
 
 console.log("plugin metadata ok");
-
