@@ -12,6 +12,8 @@ const expectedTools = [
   "gym_alias_list",
   "gym_alias_add",
   "gym_plan_status",
+  "gym_progress_report",
+  "gym_consistency_report",
   "gym_log_latest",
   "gym_log_search",
   "gym_log_append",

@@ -78,6 +78,40 @@ Input:
 
 List the current alias memory.
 
+### `gym_progress_report`
+
+Calculate progress metrics from the workout sheet and return JSON plus chat-compatible `chartText`.
+
+Input:
+
+```json
+{ "exercise": "Pull-ups", "period": "week", "range": "3m", "chartMetric": "totalReps" }
+```
+
+Output includes:
+
+- `summary`: total sessions, entries, sets, reps, best set, max weight, estimated weighted volume.
+- `series`: period buckets with metrics.
+- `chartSpec`: simple bar chart metadata for future UI renderers.
+- `chartText`: plain text bar chart for chat channels.
+- `insights` and `notices`.
+
+### `gym_consistency_report`
+
+Calculate workout frequency and streak metrics from the workout sheet.
+
+Input:
+
+```json
+{ "period": "week", "range": "6m", "chartMetric": "sessionCount" }
+```
+
+Output includes:
+
+- `summary`: workout days, current/longest streak, average workout days per week, last workout date.
+- `series`: period buckets with session count, entries, sets, and reps.
+- `chartSpec`, `chartText`, `insights`, and `notices`.
+
 ### `gym_log_append`
 
 Add one exercise row to a workout date while preserving date order. If the date already exists, the tool inserts the row at the end of that date's block before the next date. If the date is new but falls between existing days, it inserts the row before the next later date. Only dates after the latest existing day append to the sheet. Writes preserve the existing sheet shape and do not require an `Exercise ID` column.
@@ -200,6 +234,13 @@ For plan questions:
 - Use `recentSessions` to answer questions about the latest lower/upper session or whether a previous session included an exercise.
 - Mention matched exercises if the classification may be weak.
 
+For analytics questions:
+
+- Call `gym_progress_report` for exercise progress, volume, best set, reps, weight, or trend questions.
+- Call `gym_consistency_report` for frequency, streak, and consistency questions.
+- Use `chartText` when the user asks for a chart, because it is plain text and portable across chat channels.
+- Use `notices` to explain bodyweight or missing-weight limitations.
+
 For write requests:
 
 - If the user gives no date, default to today in the OpenClaw server timezone.
@@ -221,6 +262,8 @@ For edit/delete requests:
 - Unknown aliases return `resolutionRequired` instead of guessed data.
 - The Plan sheet parses duplicate session names as separate slots.
 - Plan status returns the next session after the most recent classified workout day.
+- Progress report groups metrics by day/week/month/year/all and returns chart text.
+- Consistency report returns workout frequency and streak metrics with chart text.
 - Appending the first exercise of a new date writes the date cell.
 - Appending another exercise on the same date leaves the date cell blank.
 - Adding an exercise to an older existing date inserts it inside that date block before the next date.

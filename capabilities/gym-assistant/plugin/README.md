@@ -1,8 +1,13 @@
 # Gym Assistant Plugin
 
-OpenClaw tool plugin for querying and updating the gym workout Google Sheet.
+OpenClaw tool plugin for querying, analyzing, and updating the gym workout Google Sheet.
 
 `gym_log_append` adds an exercise to the requested workout date while preserving date order. Existing dates are inserted at the end of that date block, missing dates between logged days are inserted before the next later day, and dates after the latest day are appended to the sheet.
+
+Analytics tools:
+
+- `gym_progress_report` returns progress metrics plus portable plain-text chart output.
+- `gym_consistency_report` returns workout frequency, streaks, and portable plain-text chart output.
 
 ## Local Test
 

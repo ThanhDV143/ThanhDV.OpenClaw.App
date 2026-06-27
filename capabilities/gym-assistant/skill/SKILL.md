@@ -53,6 +53,26 @@ When answering:
 - For "buổi upper trước có bài X không", inspect the newest matching `recentSessions` entry and compare both `performedExercises` and planned `session.exercises`.
 - If classification confidence is weak, mention the matched exercises used as evidence instead of overstating certainty.
 
+## Analytics Requests
+
+For questions like:
+
+- "Vẽ biểu đồ tiến độ Pull-ups 3 tháng gần đây"
+- "Tôi tập đều không?"
+- "Thống kê volume theo tuần"
+
+Use:
+
+- `gym_progress_report` for progress, volume, best set, reps, weight, or trend questions. Pass `exercise` when the user asks about one exercise.
+- `gym_consistency_report` for workout frequency, streaks, session count, and consistency questions.
+
+When answering:
+
+- Use the returned `summary`, `series`, `insights`, and `notices`.
+- Prefer `chartText` for chart output because it is plain text and works across chat channels.
+- Mention the period/range used if the user did not specify them.
+- Do not recalculate metrics manually from raw rows in chat.
+
 ## Write Requests
 
 For messages like:
@@ -95,6 +115,14 @@ Use these shapes:
 
 ```json
 { "recentLimit": 10 }
+```
+
+```json
+{ "exercise": "Pull-ups", "period": "week", "range": "3m", "chartMetric": "totalReps" }
+```
+
+```json
+{ "period": "week", "range": "6m", "chartMetric": "sessionCount" }
 ```
 
 ```json

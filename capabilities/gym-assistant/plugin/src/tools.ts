@@ -7,7 +7,13 @@ import type {
   UpdateWorkoutInput,
   WorkoutEntry,
 } from "./types.ts";
-import { addExerciseAlias, readExerciseAliasStore, writeExerciseAliasStore } from "./alias-store.ts";
+import {
+  buildConsistencyReport,
+  buildProgressReport,
+  type ConsistencyReportInput,
+  type ProgressReportInput,
+} from "./analytics.ts";
+import { addExerciseAlias, clusterKeys, readExerciseAliasStore, writeExerciseAliasStore } from "./alias-store.ts";
 import { workoutLogCandidate } from "./edits.ts";
 import { resolveExercise, searchEntriesByCluster } from "./exercise-resolver.ts";
 import { buildPlanStatus, parsePlanRows } from "./plan.ts";
@@ -164,6 +170,46 @@ export async function gymPlanStatus(params: { today?: string; recentLimit?: numb
     aliasStore,
     recentLimit: params.recentLimit,
   });
+}
+
+export async function gymProgressReport(params: ProgressReportInput = {}, config: GymPluginConfig = {}) {
+  const resolvedConfig = resolveConfig(config);
+  const rows = await readWorkoutRows(resolvedConfig);
+  const entries = parseWorkoutRows(rows);
+
+  if (!params.exercise) {
+    return {
+      resolution: null,
+      ...buildProgressReport(entries, params),
+    };
+  }
+
+  const store = await readExerciseAliasStore(resolvedConfig.aliasStorePath);
+  const resolution = resolveExercise(params.exercise, entries, store);
+  if (resolution.status !== "resolved") {
+    const report = buildProgressReport([], params);
+    return {
+      resolution,
+      ...report,
+      notices: ["Exercise resolution is required before a progress report can be calculated.", ...report.notices],
+    };
+  }
+
+  const keys = clusterKeys(resolution.cluster);
+  const matchingEntries = entries.filter((entry) => keys.has(entry.exerciseKey));
+  return {
+    resolution,
+    ...buildProgressReport(matchingEntries, {
+      ...params,
+      exercise: resolution.cluster.canonicalName,
+    }),
+  };
+}
+
+export async function gymConsistencyReport(params: ConsistencyReportInput = {}, config: GymPluginConfig = {}) {
+  const resolvedConfig = resolveConfig(config);
+  const rows = await readWorkoutRows(resolvedConfig);
+  return buildConsistencyReport(parseWorkoutRows(rows), params);
 }
 
 function todayIsoDate(): string {

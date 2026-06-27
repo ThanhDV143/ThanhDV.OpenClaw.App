@@ -2,6 +2,7 @@ import { defineToolPlugin } from "openclaw/plugin-sdk/tool-plugin";
 import {
   gymAliasAdd,
   gymAliasList,
+  gymConsistencyReport,
   gymLogAppend,
   gymLogDelete,
   gymLogFind,
@@ -9,6 +10,7 @@ import {
   gymLogSearch,
   gymLogUpdate,
   gymPlanStatus,
+  gymProgressReport,
 } from "./tools.ts";
 
 const WorkoutSetSchema = {
@@ -33,6 +35,12 @@ const ConfigSchema = {
     defaultRestSeconds: { type: "number", description: "Default rest time in seconds." },
     aliasStorePath: { type: "string", description: "Path to persistent exercise alias memory JSON." },
   },
+};
+
+const AnalyticsPeriodSchema = { enum: ["day", "week", "month", "year", "all"] };
+const AnalyticsRangeSchema = {
+  type: "string",
+  description: "Relative range such as 4w, 3m, 1y, or all. Defaults depend on the report.",
 };
 
 export default defineToolPlugin({
@@ -81,6 +89,49 @@ export default defineToolPlugin({
         },
       },
       execute: (params, config) => gymPlanStatus(params, config),
+    }),
+    tool({
+      name: "gym_progress_report",
+      label: "Gym Progress Report",
+      description:
+        "Calculate workout progress metrics and chat-compatible chart text from the Google Sheets log. Can target one resolved exercise or the whole log.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          exercise: { type: "string", description: "Optional exercise name or alias, for example Pull-ups or kéo xà." },
+          period: AnalyticsPeriodSchema,
+          range: AnalyticsRangeSchema,
+          from: { type: "string", description: "Optional ISO start date yyyy-mm-dd. Overrides range start." },
+          to: { type: "string", description: "Optional ISO end date yyyy-mm-dd. Defaults to the latest matching workout date." },
+          chartMetric: {
+            enum: ["sessionCount", "entryCount", "totalSets", "totalReps", "bestSetReps", "bestSetWeightKg", "estimatedVolumeKg"],
+            description: "Metric rendered in chartText. Defaults to totalReps.",
+          },
+        },
+      },
+      execute: (params, config) => gymProgressReport(params, config),
+    }),
+    tool({
+      name: "gym_consistency_report",
+      label: "Gym Consistency Report",
+      description:
+        "Calculate workout consistency metrics, streaks, and chat-compatible chart text from the Google Sheets log.",
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          period: AnalyticsPeriodSchema,
+          range: AnalyticsRangeSchema,
+          from: { type: "string", description: "Optional ISO start date yyyy-mm-dd. Overrides range start." },
+          to: { type: "string", description: "Optional ISO end date yyyy-mm-dd. Defaults to the latest workout date." },
+          chartMetric: {
+            enum: ["sessionCount", "entryCount", "totalSets", "totalReps"],
+            description: "Metric rendered in chartText. Defaults to sessionCount.",
+          },
+        },
+      },
+      execute: (params, config) => gymConsistencyReport(params, config),
     }),
     tool({
       name: "gym_log_latest",

@@ -1,7 +1,7 @@
 {
   "id": "gym-assistant",
   "name": "Gym Assistant",
-  "description": "Query and append to a Google Sheets workout journal.",
+  "description": "Query, analyze, and update a Google Sheets workout journal.",
   "version": "0.1.0",
   "activation": {
     "onStartup": true
@@ -11,6 +11,8 @@
       "gym_alias_list",
       "gym_alias_add",
       "gym_plan_status",
+      "gym_progress_report",
+      "gym_consistency_report",
       "gym_log_latest",
       "gym_log_search",
       "gym_log_append",

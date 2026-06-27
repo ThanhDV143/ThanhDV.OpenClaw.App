@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { buildConsistencyReport, buildProgressReport } from "../src/analytics.ts";
 import { addExerciseAlias, EMPTY_ALIAS_STORE } from "../src/alias-store.ts";
 import { parseCsv } from "../src/csv.ts";
 import { buildUpdatedWorkoutRow, nextRowNeedsDatePromotion, workoutRowFingerprint } from "../src/edits.ts";
@@ -173,6 +174,54 @@ test("append placement inserts a new date between existing workout dates", () =>
     dateCell: "23/06/2026",
     insertBeforeExistingRow: true,
   });
+});
+
+test("progress report groups exercise metrics and returns portable chart text", async () => {
+  const entries = await loadEntries();
+  const pullups = entries.filter((entry) => entry.exerciseKey === "pull-ups");
+  const report = buildProgressReport(pullups, {
+    exercise: "Pull-ups",
+    period: "month",
+    range: "all",
+    chartMetric: "totalReps",
+  });
+
+  assert.equal(report.summary.sessionCount, 3);
+  assert.equal(report.summary.totalSets, 9);
+  assert.equal(report.summary.totalReps, 61);
+  assert.deepEqual(
+    report.series.map((bucket) => [bucket.period, bucket.metrics.totalReps]),
+    [
+      ["2026-05", 39],
+      ["2026-06", 22],
+    ],
+  );
+  assert.equal(report.chartSpec.y, "totalReps");
+  assert.ok(report.chartText.includes("Pull-ups totalReps by month"));
+  assert.ok(report.notices.some((notice) => notice.includes("estimatedVolumeKg")));
+});
+
+test("consistency report tracks workout days and streaks with chart text", async () => {
+  const entries = await loadEntries();
+  const report = buildConsistencyReport(entries, {
+    period: "month",
+    range: "all",
+    chartMetric: "sessionCount",
+  });
+
+  assert.equal(report.summary.workoutDays, 5);
+  assert.equal(report.summary.entryCount, 10);
+  assert.equal(report.summary.currentStreakDays, 1);
+  assert.equal(report.summary.longestStreakDays, 1);
+  assert.deepEqual(
+    report.series.map((bucket) => [bucket.period, bucket.metrics.sessionCount]),
+    [
+      ["2026-05", 3],
+      ["2026-06", 2],
+    ],
+  );
+  assert.equal(report.chartSpec.y, "sessionCount");
+  assert.ok(report.chartText.includes("Workout sessionCount by month"));
 });
 
 test("workout row fingerprint changes when row values change", () => {
