@@ -44,17 +44,19 @@ export async function importNasPackageFile(
     throw new Error("No NAS package root is configured.");
   }
 
-  if (extname(params.sourceFilePath).toLowerCase() !== ".unitypackage") {
-    throw new Error("Only .unitypackage files can be imported.");
-  }
-
   const sourceStat = await stat(params.sourceFilePath);
   if (!sourceStat.isFile()) {
     throw new Error("Import source must be a file.");
   }
 
   const root = config.nasPackageRoots[0];
-  const targetName = safePackageFileName(params.targetName ?? basename(params.sourceFilePath));
+  const sourceName = basename(params.sourceFilePath);
+  const sourceIsUnityPackage = extname(sourceName).toLowerCase() === ".unitypackage";
+  if (!sourceIsUnityPackage && !params.targetName) {
+    throw new Error("targetName ending with .unitypackage is required when sourceFilePath does not end with .unitypackage.");
+  }
+
+  const targetName = safePackageFileName(params.targetName ?? sourceName);
   const targetFolder = safeRelativeFolder(params.targetFolder ?? "");
   const targetPath = resolve(root, targetFolder, targetName);
   ensurePathInsideRoot(root, targetPath);

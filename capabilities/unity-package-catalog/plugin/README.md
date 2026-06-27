@@ -20,4 +20,4 @@ Default config:
 
 Deletion is always two-step: find a candidate, show it to the user, then delete only after a separate confirmation.
 
-Importing `.unitypackage` files is also confirmation-gated. `unity_package_import_file` copies a local file path that is already available inside the OpenClaw container into the configured NAS package root, refuses unsafe paths, avoids overwriting by default, and updates the index after a successful import.
+Importing `.unitypackage` files is also confirmation-gated. `unity_package_import_file` copies a local file path that is already available inside the OpenClaw container into the configured NAS package root, refuses unsafe paths, avoids overwriting by default, and updates the index after a successful import. If OpenClaw stores an uploaded Unity package as a temporary `.gz` file, pass a `.unitypackage` `targetName`; the plugin copies bytes as-is and does not inspect archive contents.

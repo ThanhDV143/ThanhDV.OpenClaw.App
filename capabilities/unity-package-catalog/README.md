@@ -211,9 +211,11 @@ The import tool needs:
 - `targetName`: optional file name ending with `.unitypackage`.
 - explicit confirmation text.
 
+OpenClaw may store an uploaded `.unitypackage` attachment as a temporary `.gz` file because Unity packages are gzip/tar archives internally. That is fine: the plugin copies the bytes as-is. If `sourceFilePath` does not end with `.unitypackage`, provide `targetName`, for example `ATest.unitypackage`, so the NAS copy has the correct Unity package file name.
+
 Import safety rules:
 
-- Only `.unitypackage` files are accepted.
+- The NAS target file must be named `.unitypackage`.
 - `targetFolder` must be relative and cannot contain `.` or `..`.
 - `targetName` cannot contain path separators and must end with `.unitypackage`.
 - Existing files are not overwritten unless `overwrite=true` is explicitly confirmed.

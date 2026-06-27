@@ -263,3 +263,37 @@ test("import file rejects unsafe targets and duplicate names by default", async 
     /EEXIST|exists/i,
   );
 });
+
+test("import accepts OpenClaw inbound .gz source when targetName is .unitypackage", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "unity-package-catalog-"));
+  const root = join(dir, "packages");
+  const source = join(dir, "ATest---uuid.gz");
+  await mkdir(root);
+  await writeFile(source, "unity package bytes");
+
+  await assert.rejects(
+    () =>
+      unityPackageImportFile(
+        {
+          sourceFilePath: source,
+          confirmed: true,
+          userConfirmation: "xác nhận import",
+        },
+        { nasPackageRoots: [root], nasTrashRoot: join(root, ".trash"), indexPath: join(dir, "index.json") },
+      ),
+    /targetName ending with \.unitypackage is required/,
+  );
+
+  const result = await unityPackageImportFile(
+    {
+      sourceFilePath: source,
+      targetName: "ATest.unitypackage",
+      confirmed: true,
+      userConfirmation: "xác nhận import",
+    },
+    { nasPackageRoots: [root], nasTrashRoot: join(root, ".trash"), indexPath: join(dir, "index.json") },
+  );
+
+  assert.equal(result.package.name, "ATest.unitypackage");
+  assert.equal(await readFile(result.copiedTo, "utf8"), "unity package bytes");
+});
